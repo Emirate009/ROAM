@@ -127,11 +127,18 @@ def resolve_ssp(use_current, date_string, lat=None, lon=None):
 
 
 def profile_for_plot(ssp_file):
-    """Depth/speed arrays for the SSP figure, cleaned the way the GUI did."""
+    """Depth/speed arrays for the SSP figure, cleaned the way the GUI did.
+
+    Real CTD casts start a few metres down and their first reading is often
+    noisy, so the GUI discarded it in favour of the 6th sample. Skip that for
+    a profile that already starts at the surface (e.g. a manually entered
+    one) -- there is no noisy first reading to discard, and doing it anyway
+    overwrites a real 0 m value with one from several hundred metres down.
+    """
     depth, speed = read_ssp(ssp_file)
     depth = np.asarray(depth, dtype=float)
     speed = np.asarray(speed, dtype=float)
-    if depth.size > 5:
+    if depth.size > 5 and depth[0] > 0.0:
         depth[0] = 0.0
         speed[0] = speed[5]
     return depth, speed

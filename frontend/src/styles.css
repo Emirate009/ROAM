@@ -199,6 +199,30 @@ pre {
   border-top: 1px solid #e6e8ec;
 }
 
+/* Caps the body at ~20 rows so a large upload (hundreds/thousands of
+   readings) scrolls inside the table instead of pushing the Run button
+   far down the page. Row height is ~34px (input + padding) and the header
+   row is ~26px, so 20 rows + header ~= 706px. */
+.acc-table-scroll {
+  max-height: 706px;
+  overflow-y: auto;
+  border: 1px solid #e6e8ec;
+  border-radius: 6px;
+}
+
+/* Same idea for the raw-file preview: a large upload shouldn't dump
+   hundreds of lines of text into the page. Same cap as the table above,
+   for a consistent amount of visible content either way. */
+.acc-file-contents {
+  max-height: 706px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #e6e8ec;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
 .acc-table {
   width: 100%;
   border-collapse: collapse;
@@ -215,6 +239,9 @@ pre {
   color: #666;
   font-weight: 600;
   padding: 8px 6px 4px 0;
+  position: sticky;
+  top: 0;
+  background: #fff;
 }
 
 .acc-table td {
