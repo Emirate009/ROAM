@@ -23,11 +23,26 @@ class ScenarioParams(BaseModel):
     use_current_ssp: bool = False
     ssp_date: Optional[str] = Field("20230619", description="yyyymmdd")
 
+    depth_data: Optional[List[float]] = Field(
+        default_factory=list, description="Manual SSP override: depths in metres"
+    )
+    temperature_data: Optional[List[float]] = Field(
+        default_factory=list, description="Manual SSP override: temperature in °C, same length as depth_data"
+    )
+
     @model_validator(mode="after")
     def _check_ssp(self):
-        if not self.use_current_ssp:
+        if not self.use_current_ssp and not (self.depth_data and self.temperature_data):
             if not self.ssp_date or len(self.ssp_date) != 8 or not self.ssp_date.isdigit():
                 raise ValueError("ssp_date must be 8 digits in yyyymmdd form.")
+
+        if self.depth_data and any(
+            b <= a for a, b in zip(self.depth_data, self.depth_data[1:])
+        ):
+            # Bellhop rejects a non-increasing SSP with a raw crash dump; catch
+            # it here so the error is legible instead.
+            raise ValueError("depth_data must be strictly increasing.")
+
         return self
 
 

@@ -153,14 +153,14 @@ async def run_scenario(params: ScenarioParams):
                 status_code=400,
                 detail="Depth and temperature arrays must be the same length.",
             )
-        if len(params.depth_data) < 2:
+        if len(params.depth_data) < 8:
             raise HTTPException(
                 status_code=400,
-                detail="At least two depth/temperature points are required.",
+                detail="At least eight depth/temperature points are required.",
             )
         try:
             ssp_file, is_temporary = await run_in_threadpool(
-                create_ssp, params.use_current_ssp, params.ssp_date, lat, lon
+                create_ssp, params.depth_data, params.temperature_data
             )
         except InputError as exc:
             raise HTTPException(status_code=400, detail=str(exc))

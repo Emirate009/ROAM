@@ -172,10 +172,20 @@ export default function App() {
 
   const configProblems = missingPaths(health)
 
+  /** The accordion always has a few trailing blank rows -- drop those rather
+   * than sending Number('') === 0 as a bogus (depth 0, temp 0) point, which
+   * breaks Bellhop's "depths must be monotone increasing" requirement. */
   function setSsp(rows) {
-    const depth_data = rows.map((row) => Number(row.a))
-    const temperature_data = rows.map((row) => Number(row.b))
-    setForm((prev) => ({ ...prev, depth_data, temperature_data }))
+    const filled = rows
+      .filter((row) => row.a.trim() !== '' && row.b.trim() !== '')
+      .map((row) => ({ depth: Number(row.a), temp: Number(row.b) }))
+      .filter((row) => Number.isFinite(row.depth) && Number.isFinite(row.temp))
+
+    setForm((prev) => ({
+      ...prev,
+      depth_data: filled.map((row) => row.depth),
+      temperature_data: filled.map((row) => row.temp),
+    }))
   }
 
   return (

@@ -8,7 +8,7 @@ from . import config
 from .ssp import read_ssp
 
 # Beam / run-type settings that used to be literals inside write_env.
-RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
+RUN_TYPE = "IB"          # incoherent TL, Gaussian beams
 NUMBER_OF_BEAMS = 8000
 MIN_ANGLE = -89.0
 MAX_ANGLE = 89.0
@@ -32,8 +32,10 @@ def _fit_ssp_to_model_depth(ssp_depth, ssp_speed, max_model_depth):
     """Make the profile start at 0 m and end exactly at max_model_depth."""
     notes = []
 
-    ssp_depth = np.insert(ssp_depth, 0, 0.0)
-    ssp_speed = np.insert(ssp_speed, 0, ssp_speed[0])
+    #Check if the first depth is greater than 0, if so, insert a new depth of 0 and the corresponding speed (avoids double zeros - Bellhop will complain if the first two depths are the same)
+    if ssp_depth[0] > 0.0:
+        ssp_depth = np.insert(ssp_depth, 0, 0.0)
+        ssp_speed = np.insert(ssp_speed, 0, ssp_speed[0])
 
     max_ssp_depth = float(np.max(ssp_depth))
 
@@ -47,12 +49,14 @@ def _fit_ssp_to_model_depth(ssp_depth, ssp_speed, max_model_depth):
         ssp_depth = np.append(ssp_depth, max_model_depth)
         ssp_speed = np.append(ssp_speed, ssp_speed[-1])
     elif max_ssp_depth > max_model_depth:
+        #Otherwise truncate the SSP to the model depth, and interpolate the sound speed at the model depth
         keep = ssp_depth < max_model_depth
         speed_at_bottom = float(np.interp(max_model_depth, ssp_depth, ssp_speed))
         ssp_depth = np.append(ssp_depth[keep], max_model_depth)
         ssp_speed = np.append(ssp_speed[keep], speed_at_bottom)
         notes.append(f"Truncated SSP to the model depth of {max_model_depth:.2f} m.")
     else:
+        #Perfect match, no changes needed
         ssp_depth[-1] = max_model_depth
 
     return ssp_depth, ssp_speed, notes

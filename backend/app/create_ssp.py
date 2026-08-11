@@ -1,19 +1,38 @@
-import os
-from pathlib import Path
-
-import numpy as np
 import pandas as pd
 
 from . import config
-from .errors import InputError
 
-def create_ssp(use_current, date_string, lat=None, lon=None):
-    """Return a path to an SSP file, either from the archive or fetched from
-    Ocean Navigator. If fetched, the file is written to a temporary location
-    and should be deleted after use.
+def create_ssp(depth_data, temperature_data):
+    """Create a temporary SSP file from depth and temperature arrays.
     """
-    if use_current:
-        if lat is None or lon is None:
-            raise InputError("Current SSP requires a source position.")
-        return fetch_current_ssp(lat, lon), True
-    return determine_ssp(date_string), False
+    ssp_file = config.SSP_DIR / "custom_ssp.csv"
+
+    pressure_placeholder_values = [0] * len(depth_data)  # Placeholder for pressure values
+    salinity_placeholder_values = [0] * len(depth_data)  # Placeholder for salinity values
+
+    df = pd.DataFrame({
+        "Depth": depth_data,
+        "Pressure": pressure_placeholder_values,
+        "Salinity": salinity_placeholder_values,
+        "Temperature": temperature_data
+    })
+
+    df["Sound Speed"] = df.apply(lambda row: _calculate_sound_speed(row["Depth"], row["Temperature"]), axis=1)
+
+    df.to_csv(ssp_file, index=False)
+    return ssp_file, False
+
+def _calculate_sound_speed(depth, temperature):
+    """Calculate sound speed using the Mackenzie formula."""
+    # Mackenzie formula for sound speed in seawater
+    return (
+        1448.96
+        + 4.591 * temperature
+        - 5.304e-2 * temperature**2
+        + 2.374e-4 * temperature**3
+        + 1.340 * (depth / 1000)
+        + 1.630e-2 * (depth / 1000) * temperature
+        + 1.675e-7 * (depth / 1000) * temperature**3
+        - 1.025e-2 * (depth / 1000)**2
+        - 7.139e-13 * (depth / 1000)**3
+    )
