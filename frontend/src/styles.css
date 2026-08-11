@@ -1,0 +1,350 @@
+:root {
+  font-family: system-ui, -apple-system, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #1c1c1c;
+}
+
+body {
+  margin: 0;
+  background: #f6f7f9;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  padding: 24px;
+  align-items: start;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 24px;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  margin: 12px 0 0;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+label.button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+input,
+select {
+  padding: 6px 8px;
+  border: 1px solid #cbd0d6;
+  border-radius: 4px;
+  font: inherit;
+}
+
+input:disabled {
+  background: #f0f0f0;
+  color: #888;
+}
+
+fieldset {
+  border: 1px solid #e2e5e9;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+legend {
+  font-size: 12px;
+  color: #666;
+}
+
+button {
+  margin-top: 8px;
+  padding: 9px;
+  border: 0;
+  border-radius: 4px;
+  background: #1f6feb;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #9db8e0;
+  cursor: default;
+}
+
+.error {
+  background: #fdecec;
+  border: 1px solid #f0b4b4;
+  border-radius: 4px;
+  padding: 8px;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+figure {
+  margin: 0;
+  background: #fff;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+figcaption {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.map-image {
+  cursor: crosshair;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.notes p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+pre {
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+/* TableAccordion */
+
+.acc {
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.acc-header {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.acc-header:hover {
+  background: #f4f6f8;
+}
+
+.acc-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid #e6e8ec;
+}
+
+.acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* The important one. With table-layout:auto a column will not shrink below
+     its content's min-width, and an <input> defaults to roughly 20 characters,
+     so the table overflows its container no matter what width you set.
+     table-layout:fixed makes the declared widths win instead. */
+  table-layout: fixed;
+}
+
+.acc-table th {
+  text-align: left;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+  padding: 8px 6px 4px 0;
+}
+
+.acc-table td {
+  padding: 2px 6px 2px 0;
+}
+
+.acc-table input {
+  width: 100%;
+  min-width: 0;
+}
+
+.acc-table th:last-child,
+.acc-table td:last-child {
+  width: 28px;
+  padding-right: 0;
+}
+
+.acc-delete,
+.acc-add {
+  margin: 0;
+  background: none;
+  border: 1px solid #cbd0d6;
+  border-radius: 4px;
+  color: #555;
+  font: inherit;
+  cursor: pointer;
+}
+
+.acc-delete {
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  padding: 0;
+}
+
+.acc-delete:hover {
+  background: #fdecec;
+  border-color: #e79b9b;
+  color: #b23b3b;
+}
+
+.acc-add {
+  margin-top: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.acc-add:hover {
+  background: #f4f6f8;
+}
+
+/* Accordion */
+
+.accordion {
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.accordion-item + .accordion-item {
+  border-top: 1px solid #e6e8ec;
+}
+
+.accordion-heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.accordion-trigger {
+  /* Reset the global button styling, which is tuned for the blue Run button. */
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accordion-trigger:hover:not(:disabled) {
+  background: #f4f6f8;
+}
+
+.accordion-trigger:focus-visible {
+  outline: 2px solid #1f6feb;
+  outline-offset: -2px;
+}
+
+.accordion-trigger:disabled {
+  background: none;
+  color: #9aa0a6;
+  cursor: not-allowed;
+}
+
+.accordion-chevron {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef1f4;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.accordion-panel {
+  padding: 0 14px 14px;
+}
+
+.accordion-panel > :first-child {
+  margin-top: 0;
+}
+
+.accordion-panel > :last-child {
+  margin-bottom: 0;
+}
+
+.accordion-panel img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

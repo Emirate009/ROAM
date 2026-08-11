@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+numpy
+pandas
+scipy
+matplotlib
+pyproj
+shapely>=2.0
