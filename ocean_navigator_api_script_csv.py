@@ -11,7 +11,7 @@ EPOCH_1950 = datetime(1950, 1, 1, tzinfo=timezone.utc)
 def timestamp_to_datetime(timestamp):
     return EPOCH_1950 + timedelta(seconds=int(timestamp))
 
-def requestFile(timestamp, station=[49.5, -127.23333299999999]):
+def requestFile(timestamp, station=[49.5, -127.23333299999999], output_dir=None):
    # json object for the query
    query = {
       "dataset":"giops_day",
@@ -76,7 +76,7 @@ def requestFile(timestamp, station=[49.5, -127.23333299999999]):
          f"Response preview:\n{response_text[:1500]}"
       )
 
-   output_directory = os.path.join("ssp", "ctd")
+   output_directory = output_dir or os.path.join("ssp", "ctd")
    os.makedirs(output_directory, exist_ok=True)
 
    fname = os.path.join(output_directory, f"{timestamp}.csv")
@@ -105,7 +105,7 @@ def requestFile(timestamp, station=[49.5, -127.23333299999999]):
 
    # return fname
 
-def formatFileName(fname):
+def formatFileName(fname, output_dir=None):
    df = pd.read_csv(fname, nrows=2, header=None)  # Read only the first line after skipping 2 rows
 
    timestamp_line = str(df.iloc[1, 0])
@@ -115,10 +115,11 @@ def formatFileName(fname):
 
    # Convert the timestamp to the desired format
    dt = datetime.fromisoformat(timestamp)
-   formatted = dt.strftime("%Y%m%d%H%M")  
+   formatted = dt.strftime("%Y%m%d%H%M")
 
    # Rename the file
-   new_fname = f"ssp/ctd/{formatted}.csv"
+   output_directory = output_dir or os.path.join("ssp", "ctd")
+   new_fname = os.path.join(output_directory, f"{formatted}.csv")
    os.rename(fname, new_fname)
 
    return new_fname
@@ -153,20 +154,15 @@ def seconds_since_1950_at_midnight(dt):
 
     return int((dt - epoch_1950).total_seconds())
 
-def getSSP(coordinates):
+def getSSP(coordinates, output_dir=None):
 
    #Seconds until 1950-01-01T00:00:00Z
-   requested_date = datetime(2026, 7, 22, tzinfo=timezone.utc)
+   requested_date = datetime.now(timezone.utc)
    timestamp = seconds_since_1950_at_midnight(requested_date)
 
-   fname = None
-
-   try: 
-      fname = requestFile(timestamp, coordinates)
-      fname = formatFileName(fname)
-      formatFile(fname)
-   except Exception as e:
-      print(f"Error occurred while processing time {timestamp}: {e}")
+   fname = requestFile(timestamp, coordinates, output_dir)
+   fname = formatFileName(fname, output_dir)
+   formatFile(fname)
 
    return fname
 

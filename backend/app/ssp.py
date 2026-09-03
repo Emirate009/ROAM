@@ -87,10 +87,7 @@ def determine_ssp(date_string, ssp_dir=None):
 
 
 def fetch_current_ssp(lat, lon, ssp_dir=None):
-    """Download a fresh profile via the Ocean Navigator API and return its path.
-
-    Returns the path to the newest file in the SSP directory.
-    """
+    """Download a fresh profile via the Ocean Navigator API and return its path."""
     getSSP = _load_getSSP()
     if getSSP is None:
         raise InputError(
@@ -99,13 +96,17 @@ def fetch_current_ssp(lat, lon, ssp_dir=None):
         )
 
     ssp_dir = Path(ssp_dir or config.SSP_DIR)
-    getSSP([lat, lon])
+    ssp_dir.mkdir(parents=True, exist_ok=True)
 
-    files = [f for f in ssp_dir.iterdir() if f.is_file()]
-    if not files:
-        raise InputError(f"No SSP file appeared in {ssp_dir} after download.")
+    try:
+        fname = getSSP([lat, lon], str(ssp_dir))
+    except Exception as exc:
+        raise InputError(f"Could not download the current SSP: {exc}") from exc
 
-    return max(files, key=lambda f: f.stat().st_mtime)
+    if not fname or not Path(fname).is_file():
+        raise InputError("Ocean Navigator download did not produce an SSP file.")
+
+    return Path(fname)
 
 
 def delete_ssp(path):
@@ -122,7 +123,7 @@ def resolve_ssp(use_current, date_string, lat=None, lon=None):
     if use_current:
         if lat is None or lon is None:
             raise InputError("Current SSP requires a source position.")
-        return fetch_current_ssp(lat, lon), False
+        return fetch_current_ssp(lat, lon), True
     return determine_ssp(date_string), False
 
 

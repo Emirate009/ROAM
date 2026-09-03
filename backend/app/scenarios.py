@@ -96,7 +96,7 @@ def run_ranges(params, ssp_file):
     diagnostics = []
     notes = []
 
-    for offset_m, label in ((0, ""), (1000, " +1km"), (2000, " +2km")):
+    for offset_m, label in ((0, ""), (5000, " +5km"), (10000, " +10km")):
         start_x, start_y, _ = calculate_terminus_points(
             params.x, params.y, bearing, offset_m, kind="PCS"
         )
