@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ROAM backend (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": { "WG_DATA_ROOT": "${workspaceFolder}" },
+      "justMyCode": true
+    },
+    {
+      "name": "ROAM frontend (Vite)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/frontend"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "ROAM (backend + frontend)",
+      "configurations": ["ROAM backend (FastAPI)", "ROAM frontend (Vite)"],
+      "stopAll": true
+    }
+  ]
+}
