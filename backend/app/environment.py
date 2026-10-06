@@ -8,8 +8,8 @@ from . import config
 from .ssp import read_ssp
 
 # Beam / run-type settings that used to be literals inside write_env.
-RUN_TYPE = "IB"          # incoherent TL, Gaussian beams
-NUMBER_OF_BEAMS = 8000
+RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
+NUMBER_OF_BEAMS = 4000
 MIN_ANGLE = -89.0
 MAX_ANGLE = 89.0
 RAY_STEP = 0             # 0 = let Bellhop choose
@@ -18,7 +18,6 @@ NUMBER_OF_RANGES = 5001
 
 @dataclass
 class EnvInfo:
-    """What the .env writer decided, so plotting and slicing stay in sync."""
 
     max_model_depth: float
     number_receiver_depths: int

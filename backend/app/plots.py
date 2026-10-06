@@ -1,7 +1,4 @@
 """All matplotlib figures, rendered headlessly to base64 PNG.
-
-Every function returns {"title": str, "image": "data:image/png;base64,..."} so
-the React app can drop it straight into an <img src=...>.
 """
 
 import base64
@@ -47,7 +44,7 @@ def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, 
 
     image = ax.imshow(
         tl,
-        vmin=30,
+        vmin=40,
         vmax=90,
         cmap="jet_r",
         aspect="auto",
@@ -115,11 +112,7 @@ def _map_extent():
 
 
 def overview_map_figure(x=None, y=None, bearing=None, raylength=None):
-    """The bathymetry / survey-area map that used to be embedded in the tk window.
-
-    Optionally draws the source marker and the bearing line. Also returns the
-    pixel <-> data-coordinate mapping for the axes, so the frontend can turn a
-    click on the <img> into an (x, y) in metres.
+    """The bathymetry / survey-area map, optionally with the source and bearing line.
     """
     x_bounds, y_bounds = _map_extent()
     frame = load_grid_frame()
