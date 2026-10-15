@@ -6,7 +6,7 @@ tkinter widgets and end in plt.show().
 
 import numpy as np
 
-from . import plots
+from . import plots, sites
 from .bathymetry import prepare_bathymetry
 from .bellhop_runner import run_bellhop, tl_diagnostics
 from .environment import write_env
@@ -38,13 +38,19 @@ def _single_run(ssp_file, x, y, bearing, raylength, source_depth, freq):
     }
 
 
+def _source_metres(params):
+    """Source lat/lon -> local metres, which the bathymetry slice works in."""
+    return sites.lonlat_to_local_metres(params.lon, params.lat)
+
+
 def run_standard(params, ssp_file):
     """TL heatmap + SSP profile + TL-versus-range slice at the receiver depth."""
     bearing = compass_to_math_bearing(params.bearing)
+    x, y = _source_metres(params)
     run = _single_run(
         ssp_file,
-        params.x,
-        params.y,
+        x,
+        y,
         bearing,
         params.range_m,
         params.source_depth,
@@ -96,9 +102,10 @@ def run_ranges(params, ssp_file):
     diagnostics = []
     notes = []
 
+    x, y = _source_metres(params)
     for offset_m, label in ((0, ""), (5000, " +5km"), (10000, " +10km")):
         start_x, start_y, _ = calculate_terminus_points(
-            params.x, params.y, bearing, offset_m, kind="PCS"
+            x, y, bearing, offset_m, kind="PCS"
         )
         # The original reused a stale .env here; the env is rewritten per run so
         # the model depth matches each slice's bathymetry.
@@ -134,12 +141,13 @@ def run_depths(params, ssp_file):
     diagnostics = []
     notes = []
 
+    x, y = _source_metres(params)
     for step in (0, 50, 100):
         source_depth = params.source_depth + step
         run = _single_run(
             ssp_file,
-            params.x,
-            params.y,
+            x,
+            y,
             bearing,
             params.range_m,
             source_depth,

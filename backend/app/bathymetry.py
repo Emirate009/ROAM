@@ -82,7 +82,7 @@ def write_bty(bathy_range, bathy_depth, path=None):
 
 
 def prepare_bathymetry(x, y, bearing, raylength, source_depth):
-    """Slice + validate + write, the way the old write_bty() did in one go."""
+    """Main function to extract the bathymetry slice and write the .bty file."""
     bathy_range, bathy_depth = bathymetry_slice(x, y, bearing, raylength)
 
     if source_depth > float(np.max(bathy_depth)):

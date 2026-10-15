@@ -97,8 +97,8 @@ def list_arrays():
 
 @app.get("/api/map")
 async def overview_map(
-    x: Optional[float] = Query(None),
-    y: Optional[float] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
     bearing: Optional[float] = Query(None),
     range_m: Optional[int] = Query(None),
 ):
@@ -119,7 +119,7 @@ async def overview_map(
     math_bearing = None if bearing is None else 90.0 - bearing
     try:
         return await run_in_threadpool(
-            plots.overview_map_figure, x, y, math_bearing, range_m
+            plots.overview_map_figure, lat, lon, math_bearing, range_m
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=f"Grid file missing: {exc}")
@@ -144,9 +144,6 @@ async def run_scenario(params: ScenarioParams):
             detail=f"Bellhop executable not found at {config.BELLHOP_EXE}.",
         )
 
-    lon = lat = None
-    if params.use_current_ssp:
-        lon, lat = sites.local_metres_to_lonlat(params.x, params.y)
     if params.depth_data and params.temperature_data:
         if len(params.depth_data) != len(params.temperature_data):
             raise HTTPException(
@@ -167,7 +164,7 @@ async def run_scenario(params: ScenarioParams):
     else: 
         try:
             ssp_file, is_temporary = await run_in_threadpool(
-                resolve_ssp, params.use_current_ssp, params.ssp_date, lat, lon
+                resolve_ssp, params.use_current_ssp, params.ssp_date, params.lat, params.lon
             )
         except InputError as exc:
             raise HTTPException(status_code=400, detail=str(exc))

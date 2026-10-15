@@ -34,10 +34,6 @@ _ARRAY_Y = [
     150000, 150000, 150000, 150000, 150000, 150000,
 ]
 
-ARRAYS = [
-    {"name": name, "x": float(x), "y": float(y)}
-    for name, x, y in zip(ARRAY_NAMES, _ARRAY_X, _ARRAY_Y)
-]
 
 # Survey boundary, degrees.
 BOUNDARY_LON = [
@@ -69,3 +65,23 @@ def local_metres_to_lonlat(x, y):
     inverse = Transformer.from_crs(config.TARGET_CRS, config.SOURCE_CRS, always_xy=True)
     lon, lat = inverse.transform(x + origin_x, y + origin_y)
     return float(lon), float(lat)
+
+
+def lonlat_to_local_metres(lon, lat):
+    """Lon/lat degrees -> metres relative to the model origin. The bathymetry
+    slice is cut along a straight line in metres, so the source needs this."""
+    x_utm, y_utm = _transformer.transform(lon, lat)
+    origin_x, origin_y = _transformer.transform(config.ORIGIN_LON, config.ORIGIN_LAT)
+    return float(x_utm - origin_x), float(y_utm - origin_y)
+
+
+def _array_presets():
+    """Array presets in lat/lon. The positions are defined in local metres above."""
+    presets = []
+    for name, x, y in zip(ARRAY_NAMES, _ARRAY_X, _ARRAY_Y):
+        lon, lat = local_metres_to_lonlat(x, y)
+        presets.append({"name": name, "lat": lat, "lon": lon})
+    return presets
+
+
+ARRAYS = _array_presets()

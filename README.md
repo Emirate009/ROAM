@@ -71,14 +71,14 @@ Requires Python 3.10+ (the API uses `X | None` type syntax).
 | --- | --- |
 | `GET /api/health` | path and dependency check |
 | `GET /api/arrays` | array presets for the dropdown |
-| `GET /api/map?x=&y=&bearing=&range_m=` | survey-area map PNG, with optional source marker and bearing line |
+| `GET /api/map?lat=&lon=&bearing=&range_m=` | survey-area map PNG, with optional source marker and bearing line |
 | `POST /api/run` | run a scenario, returns `{plots: [{title, image}], diagnostics, notes}` |
 
 `POST /api/run` body:
 
 ```json
 {
-  "x": 40000, "y": 130000, "bearing": 90,
+  "lat": 49.16317, "lon": -127.42809, "bearing": 90,
   "frequency": 7500, "source_depth": 200, "receiver_depth": 200,
   "source_level": 135, "ambient_level": 70, "range_m": 5000,
   "mode": "standard",
