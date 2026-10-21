@@ -25,6 +25,8 @@ bellhop/grid_150.txt
 bellhop/bellhop.exe.zip
 bellhop/land_file.txt
 bellhop/icon.ico
+start.sh
+frontend/src/*.txt
 
 # macOS
 .DS_Store

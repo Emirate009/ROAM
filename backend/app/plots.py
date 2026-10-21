@@ -21,10 +21,12 @@ DPI = 110
 
 
 def _encode(fig, title, tight=True):
-    """tight=False keeps the canvas at exactly figsize*dpi pixels, so a pixel
+    """
+    tight=False keeps the canvas at exactly figsize*dpi pixels, so a pixel
     bounding box captured before saving (see overview_map_figure) still lines
     up with the saved PNG. bbox_inches='tight' crops after the fact and would
-    invalidate that mapping."""
+    invalidate that mapping.
+    """
     buffer = io.BytesIO()
     kwargs = {"format": "png", "dpi": DPI}
     if tight:
@@ -115,7 +117,8 @@ def _map_extent():
 
 
 def overview_map_figure(lat=None, lon=None, bearing=None, raylength=None):
-    """The bathymetry / survey-area map in lon/lat, optionally with the source
+    """
+    The bathymetry / survey-area map in lon/lat, optionally with the source
     and bearing line.
 
     The source is plotted directly. The bearing-line end point is computed in

@@ -2,12 +2,13 @@ import pandas as pd
 
 from . import config
 
-# Salinity isn't collected from the manual/upload input, so assume standard
+# Salinity isn't collected from the input menu, so assume standard
 # open-ocean salinity (35 ppt) -- this zeroes out the formula's salinity terms.
 STANDARD_SALINITY = 35.0
 
 def create_ssp(depth_data, temperature_data):
-    """Create a temporary SSP file from depth and temperature arrays.
+    """
+    Create a temporary SSP file from depth and temperature arrays.
     """
     ssp_file = config.SSP_DIR / "custom_ssp.csv"
 
@@ -29,8 +30,8 @@ def create_ssp(depth_data, temperature_data):
     return ssp_file, False
 
 def _calculate_sound_speed(depth, temperature, salinity=STANDARD_SALINITY):
-    """Calculate sound speed using the Mackenzie (1981) formula.
-
+    """
+    Calculate sound speed using the Mackenzie (1981) formula.
     depth in metres, temperature in degrees C, salinity in ppt.
     """
     return (

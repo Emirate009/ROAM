@@ -66,7 +66,7 @@ export default function TableAccordion({
   /** Real casts come with a metadata preamble (ship, station, coefficients,
    * unit labels) instead of a fixed header line, so there is no reliable
    * marker for "data starts here". Keep only the lines where both columns
-   * are genuinely numeric -- that skips the preamble, any header/units row,
+   * are actually numeric -- that skips the preamble, any header/units row,
    * and blank lines, regardless of what the file's header actually says. */
   function parseFileContents() {
     const contents = fileContents;
@@ -120,8 +120,7 @@ export default function TableAccordion({
               </thead>
               <tbody>
                 {rows.map((row, index) => (
-                  // Rows have no stable id, so the index is the key. Fine here
-                  // because rows are only appended or removed, never reordered.
+                  // Rows have no stable id, so the index is the key
                   <tr key={index}>
                     <td>
                       <input

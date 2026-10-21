@@ -7,13 +7,13 @@ import numpy as np
 from . import config
 from .ssp import read_ssp
 
-# Beam / run-type settings that used to be literals inside write_env.
+# Beam / run-type settings
 RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
-NUMBER_OF_BEAMS = 4000
-MIN_ANGLE = -89.0
-MAX_ANGLE = 89.0
+NUMBER_OF_BEAMS = 4000   # Number of beams to use
+MIN_ANGLE = -89.0        # Minimum launch angle in degrees
+MAX_ANGLE = 89.0         # Maximum launch angle in degrees
 RAY_STEP = 0             # 0 = let Bellhop choose
-NUMBER_OF_RANGES = 5001
+NUMBER_OF_RANGES = 5001  # Number of ranges to use
 
 
 @dataclass
@@ -40,7 +40,7 @@ def _fit_ssp_to_model_depth(ssp_depth, ssp_speed, max_model_depth):
 
     if max_ssp_depth < max_model_depth:
         # Constant extrapolation from the deepest known sound speed.
-        # Modelling assumption -- a genuinely deeper SSP is preferable.
+        # Modelling assumption as a deeper SSP is preferable.
         notes.append(
             f"Extended SSP from {max_ssp_depth:.2f} m to {max_model_depth:.2f} m "
             f"at a constant {ssp_speed[-1]:.2f} m/s."
@@ -62,7 +62,8 @@ def _fit_ssp_to_model_depth(ssp_depth, ssp_speed, max_model_depth):
 
 
 def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
-    """Write the Bellhop environment file.
+    """
+    Write the Bellhop environment file.
 
     dist_km       -- maximum receiver range in kilometres
     deepest_bathy -- deepest water depth along the slice, metres

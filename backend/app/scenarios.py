@@ -1,7 +1,5 @@
-"""The three scenario modes, as pure functions that return plots + diagnostics.
-
-These replace run_standard / run_ranges / run_depths, which used to read
-tkinter widgets and end in plt.show().
+"""
+The three scenario modes, as pure functions that return plots + diagnostics.
 """
 
 import numpy as np
@@ -107,8 +105,7 @@ def run_ranges(params, ssp_file):
         start_x, start_y, _ = calculate_terminus_points(
             x, y, bearing, offset_m, kind="PCS"
         )
-        # The original reused a stale .env here; the env is rewritten per run so
-        # the model depth matches each slice's bathymetry.
+        # The env is rewritten per run so the model depth matches each slice's bathymetry.
         run = _single_run(
             ssp_file,
             start_x,

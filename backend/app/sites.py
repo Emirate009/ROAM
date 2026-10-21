@@ -15,7 +15,7 @@ ARRAY_NAMES = [
 ]
 
 # 6 columns x 7 rows of x, 6 columns x 5 rows of y, as in the original script.
-# zip() below pairs them off in the same order the tkinter dropdown did.
+# zip() below pairs them off
 _ARRAY_X = [
     20000, 30000, 40000, 50000, 60000, 70000,
     20000, 30000, 40000, 50000, 60000, 70000,

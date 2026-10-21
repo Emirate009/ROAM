@@ -34,7 +34,7 @@ def requestFile(timestamp, station=[49.5, -127.23333299999999], output_dir=None)
    print(f"URL: {url}")
 
    try:
-      data_file = requests.get(url, stream=True)
+      data_file = requests.get(url, stream=True, timeout=30)
    except requests.exceptions.RequestException as error:
       raise RuntimeError(
          f"Could not connect to Ocean Navigator: {error}"

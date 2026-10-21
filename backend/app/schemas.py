@@ -1,5 +1,6 @@
-"""Request/response models. Validation that used to be scattered through the
-tkinter callbacks now happens here, before any file is written."""
+"""
+Request/response models. Validation happens here before any file is written.
+"""
 
 from typing import Any, List, Literal, Optional
 

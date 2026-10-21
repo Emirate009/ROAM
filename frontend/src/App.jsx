@@ -76,8 +76,7 @@ export default function App() {
     }),
   )
 
-  // Reachability + configuration check. Failures here are shown rather than
-  // swallowed
+  // Reachability + configuration check. Failures here are shown in the UI, but do not throw an exception that would break the whole app.
   useEffect(() => {
     let cancelled = false
 
@@ -125,8 +124,7 @@ export default function App() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  /** Turn a click on the map <img> into a lat/lon, using the pixel
-   * <-> data-coordinate mapping the backend computed for this render. */
+  /** Turn a click on the map <img> into a lat/lon, using the pixel and data bounds returned by the backend. */
   function placeSourceFromClick(event) {
     const { pixel_bounds: px, data_bounds: db } = mapFigure ?? {}
     if (!px || !db) return
