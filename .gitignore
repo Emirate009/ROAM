@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.*
+
+# Virtual environments
+.venv/
+venv/
+
+# Node.js dependencies
+node_modules/
+
+# Vite cache
+.vite/
+
+# Local VS Code settings
+.vscode/settings.json
+
+# Local application settings 
+bellhop/grid_150_WCFR.csv
+bellhop/grid_150.txt
+bellhop/bellhop.exe.zip
+bellhop/land_file.txt
+
+# macOS
+.DS_Store
