@@ -3,13 +3,13 @@ import { getHealth, getMap, postRun } from './api'
 import TableAccordion from './TableAccordion'
 
 const DEFAULTS = {
-  x: '',
-  y: '',
+  lat: '',
+  lon: '',
   bearing: '',
-  frequency: 7500,
+  frequency: 500,
   source_depth: 200,
   receiver_depth: 200,
-  source_level: 135,
+  source_level: 125,
   ambient_level: 70,
   range_m: 5000,
   mode: 'standard',
@@ -69,15 +69,14 @@ export default function App() {
 
   const preview = useDebounced(
     JSON.stringify({
-      x: form.x,
-      y: form.y,
+      lat: form.lat,
+      lon: form.lon,
       bearing: form.bearing,
       range_m: form.range_m,
     }),
   )
 
-  // Reachability + configuration check. Failures here are shown rather than
-  // swallowed
+  // Reachability + configuration check. Failures here are shown in the UI, but do not throw an exception that would break the whole app.
   useEffect(() => {
     let cancelled = false
 
@@ -94,11 +93,11 @@ export default function App() {
   useEffect(() => {
     if (backendError) return undefined
 
-    const { x, y, bearing, range_m } = JSON.parse(preview)
+    const { lat, lon, bearing, range_m } = JSON.parse(preview)
     const params = new URLSearchParams()
-    if (x !== '' && y !== '') {
-      params.set('x', x)
-      params.set('y', y)
+    if (lat !== '' && lon !== '') {
+      params.set('lat', lat)
+      params.set('lon', lon)
       if (bearing !== '') params.set('bearing', bearing)
       if (range_m !== '') params.set('range_m', range_m)
     }
@@ -125,8 +124,7 @@ export default function App() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  /** Turn a click on the map <img> into an (x, y) in metres, using the pixel
-   * <-> data-coordinate mapping the backend computed for this render. */
+  /** Turn a click on the map <img> into a lat/lon, using the pixel and data bounds returned by the backend. */
   function placeSourceFromClick(event) {
     const { pixel_bounds: px, data_bounds: db } = mapFigure ?? {}
     if (!px || !db) return
@@ -144,10 +142,10 @@ export default function App() {
 
     const fracX = (clickX - px.left) / (px.right - px.left)
     const fracY = (clickY - px.top) / (px.bottom - px.top)
-    const x = db.x_min + fracX * (db.x_max - db.x_min)
-    const y = db.y_max - fracY * (db.y_max - db.y_min)
+    const lon = db.lon_min + fracX * (db.lon_max - db.lon_min)
+    const lat = db.lat_max - fracY * (db.lat_max - db.lat_min)
 
-    setForm((prev) => ({ ...prev, x: Math.round(x), y: Math.round(y) }))
+    setForm((prev) => ({ ...prev, lat: lat.toFixed(5), lon: lon.toFixed(5) }))
   }
 
   async function runScenario(event) {
@@ -157,7 +155,7 @@ export default function App() {
     setResult(null)
 
     const payload = { ...form }
-    for (const key of ['x', 'y', 'bearing', ...NUMERIC_FIELDS.map((f) => f[0])]) {
+    for (const key of ['lat', 'lon', 'bearing', ...NUMERIC_FIELDS.map((f) => f[0])]) {
       payload[key] = Number(payload[key])
     }
 
@@ -216,12 +214,12 @@ export default function App() {
         <p className="hint">Click the map to place the source, or enter coordinates directly.</p>
 
         <label>
-          X (m)
-          <input value={form.x} onChange={(e) => update('x', e.target.value)} required />
+          Latitude (°)
+          <input value={form.lat} onChange={(e) => update('lat', e.target.value)} required />
         </label>
         <label>
-          Y (m)
-          <input value={form.y} onChange={(e) => update('y', e.target.value)} required />
+          Longitude (°)
+          <input value={form.lon} onChange={(e) => update('lon', e.target.value)} required />
         </label>
         <label>
           Bearing (deg)

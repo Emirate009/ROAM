@@ -51,7 +51,7 @@ def bathymetry_slice(x, y, bearing, raylength, resolution=RESOLUTION):
     end_x, end_y, _ = calculate_terminus_points(x, y, bearing, raylength, kind="PCS")
 
     # linspace instead of arange: guarantees exactly `resolution` samples and
-    # avoids the zero-step / mismatched-length special cases in the original.
+    # avoids zero-step / mismatched-length special cases
     x_line = np.linspace(x, end_x, resolution)
     y_line = np.linspace(y, end_y, resolution)
     line_xy = np.column_stack((x_line, y_line))
@@ -82,7 +82,7 @@ def write_bty(bathy_range, bathy_depth, path=None):
 
 
 def prepare_bathymetry(x, y, bearing, raylength, source_depth):
-    """Slice + validate + write, the way the old write_bty() did in one go."""
+    """Main function to extract the bathymetry slice and write the .bty file."""
     bathy_range, bathy_depth = bathymetry_slice(x, y, bearing, raylength)
 
     if source_depth > float(np.max(bathy_depth)):

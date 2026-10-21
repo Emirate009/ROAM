@@ -1,12 +1,3 @@
-"""FastAPI entry point.
-
-    cd backend
-    uvicorn app.main:app --reload --port 8000
-
-Run it from the `backend/` folder, with WG_DATA_ROOT pointing at the tree that
-contains `bellhop/` and `ssp/`.
-"""
-
 import logging
 import traceback
 from typing import List, Optional
@@ -45,9 +36,11 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    """Starlette's default 500 is a plain-text body, which the frontend cannot
+    """
+    Starlette's default 500 is a plain-text body, which the frontend cannot
     parse as JSON ("unexpected end of data"). Always answer with JSON so the
-    real error reaches the browser."""
+    real error reaches the browser.
+    """
     logger.exception("Unhandled error on %s", request.url.path)
     return JSONResponse(
         status_code=500,
@@ -60,8 +53,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 def log_paths():
-    """Print the resolved paths at boot, so a misconfigured WG_DATA_ROOT is
-    obvious in the terminal rather than showing up as an empty dropdown."""
+    """
+    Print the resolved paths at boot, so a misconfigured path is
+    obvious in the terminal rather than showing up as an empty dropdown.
+    """
     logger.info("data root      : %s", config.DATA_ROOT)
     logger.info("grid file      : %s (exists=%s)", config.GRID_FILE, config.GRID_FILE.exists())
     logger.info("bellhop exe    : %s (exists=%s)", config.BELLHOP_EXE, config.BELLHOP_EXE.exists())
@@ -74,7 +69,9 @@ def log_paths():
 
 @app.get("/api/health")
 def health():
-    """Cheap reachability + configuration check. The frontend calls this on load."""
+    """
+    Reachability + configuration check. The frontend calls this on load.
+    """
     return {
         "status": "ok",
         "data_root": str(config.DATA_ROOT),
@@ -90,19 +87,22 @@ def health():
 
 @app.get("/api/arrays", response_model=List[ArrayPreset])
 def list_arrays():
-    """Preset source positions for the dropdown. Pure static data - if this
-    fails, the backend is not reachable at all."""
+    """
+    Preset source positions for the dropdown. Pure static data - if this
+    fails, the backend is not reachable at all.
+    """
     return sites.ARRAYS
 
 
 @app.get("/api/map")
 async def overview_map(
-    x: Optional[float] = Query(None),
-    y: Optional[float] = Query(None),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
     bearing: Optional[float] = Query(None),
     range_m: Optional[int] = Query(None),
 ):
-    """Survey-area bathymetry map, optionally with the source and bearing line.
+    """
+    Survey-area bathymetry map, optionally with the source and bearing line.
 
     The bearing is converted from compass to model convention here so the
     preview matches what the scenario will actually run.
@@ -119,7 +119,7 @@ async def overview_map(
     math_bearing = None if bearing is None else 90.0 - bearing
     try:
         return await run_in_threadpool(
-            plots.overview_map_figure, x, y, math_bearing, range_m
+            plots.overview_map_figure, lat, lon, math_bearing, range_m
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=f"Grid file missing: {exc}")
@@ -144,9 +144,6 @@ async def run_scenario(params: ScenarioParams):
             detail=f"Bellhop executable not found at {config.BELLHOP_EXE}.",
         )
 
-    lon = lat = None
-    if params.use_current_ssp:
-        lon, lat = sites.local_metres_to_lonlat(params.x, params.y)
     if params.depth_data and params.temperature_data:
         if len(params.depth_data) != len(params.temperature_data):
             raise HTTPException(
@@ -167,7 +164,7 @@ async def run_scenario(params: ScenarioParams):
     else: 
         try:
             ssp_file, is_temporary = await run_in_threadpool(
-                resolve_ssp, params.use_current_ssp, params.ssp_date, lat, lon
+                resolve_ssp, params.use_current_ssp, params.ssp_date, params.lat, params.lon
             )
         except InputError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
@@ -182,7 +179,7 @@ async def run_scenario(params: ScenarioParams):
     except FileNotFoundError as exc:
         raise HTTPException(status_code=500, detail=f"Missing data file: {exc}")
     finally:
-        # The tk app deleted a downloaded profile on window close; do it per run.
+        # Delete the downloaded profile on window close per run.
         if is_temporary:
             delete_ssp(ssp_file)
 

@@ -13,10 +13,12 @@
     },
     {
       "name": "ROAM frontend (Vite)",
-      "type": "node-terminal",
+      "type": "node",
       "request": "launch",
-      "command": "npm run dev",
-      "cwd": "${workspaceFolder}/frontend"
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal"
     }
   ],
   "compounds": [

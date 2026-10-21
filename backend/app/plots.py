@@ -21,10 +21,12 @@ DPI = 110
 
 
 def _encode(fig, title, tight=True):
-    """tight=False keeps the canvas at exactly figsize*dpi pixels, so a pixel
+    """
+    tight=False keeps the canvas at exactly figsize*dpi pixels, so a pixel
     bounding box captured before saving (see overview_map_figure) still lines
     up with the saved PNG. bbox_inches='tight' crops after the fact and would
-    invalidate that mapping."""
+    invalidate that mapping.
+    """
     buffer = io.BytesIO()
     kwargs = {"format": "png", "dpi": DPI}
     if tight:
@@ -94,69 +96,81 @@ def tl_slice_figure(tl, receiver_depth, raylength_m, source_level, ambient_level
 
 @lru_cache(maxsize=1)
 def _land_boundary():
-    """Concave hull of the shallow (<50 m) grid points, cached -- it is slow."""
+    """Concave hull of the shallow (<50 m) grid points in lon/lat, cached -- it is slow."""
     frame = load_grid_frame()
-    land_points = frame[frame["Depth"] < 50].to_numpy()
-    hull = concave_hull(MultiPoint(land_points[:, 3:5]), ratio=0.2)
-    xs, ys = hull.exterior.xy
-    return np.asarray(xs), np.asarray(ys)
+    land_points = frame.loc[frame["Depth"] < 50, ["Long", "Lat"]].to_numpy()
+    hull = concave_hull(MultiPoint(land_points), ratio=0.2)
+    lons, lats = hull.exterior.xy
+    return np.asarray(lons), np.asarray(lats)
 
 
-@lru_cache(maxsize=1)
+# Map padding around the survey boundary, in degrees (~20 km each way at 49N).
+MAP_PAD_LON = 0.3
+MAP_PAD_LAT = 0.2
+
+
 def _map_extent():
-    x, y = sites.boundary_local_metres()
-    return (
-        [float(min(x)) - 30000, float(max(x)) + 30000],
-        [float(min(y)) - 30000, float(max(y)) + 30000],
-    )
+    """Lon/lat axis limits: the survey boundary plus MAP_PAD_LON / MAP_PAD_LAT."""
+    lon_lims = [min(sites.BOUNDARY_LON) - MAP_PAD_LON, max(sites.BOUNDARY_LON) + MAP_PAD_LON]
+    lat_lims = [min(sites.BOUNDARY_LAT) - MAP_PAD_LAT, max(sites.BOUNDARY_LAT) + MAP_PAD_LAT]
+    return lon_lims, lat_lims
 
 
-def overview_map_figure(x=None, y=None, bearing=None, raylength=None):
-    """The bathymetry / survey-area map, optionally with the source and bearing line.
+def overview_map_figure(lat=None, lon=None, bearing=None, raylength=None):
     """
-    x_bounds, y_bounds = _map_extent()
+    The bathymetry / survey-area map in lon/lat, optionally with the source
+    and bearing line.
+
+    The source is plotted directly. The bearing-line end point is computed in
+    local metres, the same way the bathymetry slice is, so the preview line
+    matches the slice the model actually uses.
+    """
+    lon_lims, lat_lims = _map_extent()
     frame = load_grid_frame()
+    # Keep a little grid beyond the axes so the triangulation reaches the edges.
     frame = frame[
-        (frame["x"] > x_bounds[0])
-        & (frame["x"] < x_bounds[1])
-        & (frame["y"] > y_bounds[0])
-        & (frame["y"] < y_bounds[1])
+        (frame["Long"] > lon_lims[0] - MAP_PAD_LON / 2)
+        & (frame["Long"] < lon_lims[1] + MAP_PAD_LON / 2)
+        & (frame["Lat"] > lat_lims[0] - MAP_PAD_LAT / 2)
+        & (frame["Lat"] < lat_lims[1] + MAP_PAD_LAT / 2)
     ]
 
     fig, ax = plt.subplots(figsize=(10, 8), dpi=DPI)
-    ax.set_xlim(x_bounds[0] + 10000, x_bounds[1] - 10000)
-    ax.set_ylim(y_bounds[0] + 10000, y_bounds[1] - 10000)
+    ax.set_xlim(*lon_lims)
+    ax.set_ylim(*lat_lims)
     ax.set_autoscale_on(False)
 
-    tpc = ax.tripcolor(frame["x"], frame["y"], frame["Depth"], cmap="Blues", shading="flat")
+    tpc = ax.tripcolor(frame["Long"], frame["Lat"], frame["Depth"], cmap="Blues", shading="flat")
 
-    boundary_x, boundary_y = _land_boundary()
-    ax.plot(boundary_x, boundary_y, color="black", lw=0.5)
-    ax.fill(boundary_x, boundary_y, color="lightgray", alpha=0.5)
+    boundary_lon, boundary_lat = _land_boundary()
+    ax.plot(boundary_lon, boundary_lat, color="black", lw=0.5)
+    ax.fill(boundary_lon, boundary_lat, color="lightgray", alpha=0.5)
 
     colorbar = fig.colorbar(tpc, ax=ax, label="Depth (m)")
     colorbar.ax.invert_yaxis()
 
-    survey_x, survey_y = sites.boundary_local_metres()
-    ax.plot(survey_x, survey_y, lw=1, color="red")
+    ax.plot(sites.BOUNDARY_LON, sites.BOUNDARY_LAT, lw=1, color="red")
 
-    if x is not None and y is not None:
-        ax.plot([x], [y], marker="+", markersize=15, mew=2, color="red")
+    if lat is not None and lon is not None:
+        ax.plot([lon], [lat], marker="+", markersize=15, mew=2, color="red")
         if bearing is not None and raylength:
+            x, y = sites.lonlat_to_local_metres(lon, lat)
             end_x, end_y, _ = calculate_terminus_points(x, y, bearing, raylength, "PCS")
+            end_lon, end_lat = sites.local_metres_to_lonlat(end_x, end_y)
             ax.plot(
-                [x, end_x],
-                [y, end_y],
+                [lon, end_lon],
+                [lat, end_lat],
                 color="red",
                 alpha=0.6,
                 linestyle="dashed",
                 lw=2,
             )
 
-    ax.set_xlabel("x (m)")
-    ax.set_ylabel("y (m)")
+    ax.set_xlabel("Longitude (°)")
+    ax.set_ylabel("Latitude (°)")
     ax.set_title("WCFA Acoustic Modelling")
-    ax.set_aspect(1, adjustable="box")
+    # Equal ground distance per degree at the map's mid-latitude.
+    ax.set_aspect(1 / np.cos(np.radians(np.mean(lat_lims))), adjustable="box")
 
     fig.tight_layout()
     fig.canvas.draw()
@@ -169,7 +183,8 @@ def overview_map_figure(x=None, y=None, bearing=None, raylength=None):
     result = _encode(fig, "Survey area", tight=False)
     result["image_size"] = {"width": fig_width_px, "height": fig_height_px}
     result["data_bounds"] = {
-        "x_min": xlim[0], "x_max": xlim[1], "y_min": ylim[0], "y_max": ylim[1],
+        "lon_min": float(xlim[0]), "lon_max": float(xlim[1]),
+        "lat_min": float(ylim[0]), "lat_max": float(ylim[1]),
     }
     # Pixel box of the plotted axes within the PNG, top-left origin (matches
     # the coordinate system a browser reports from a click on an <img>).

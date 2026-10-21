@@ -12,7 +12,7 @@ from .errors import ModelError
 # Bellhop reads and writes fixed filenames, so only one run at a time.
 BELLHOP_LOCK = threading.Lock()
 
-# `bellhop.readshd` lives next to the data tree in the original layout.
+# `bellhop.readshd` lives next to the data tree
 if str(config.DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(config.DATA_ROOT))
 
@@ -45,7 +45,7 @@ def tl_diagnostics(tl):
 def run_bellhop():
     """Execute Bellhop on the current WG_.env / WG_.bty and return the TL array.
 
-    Unlike the original, this never calls os.chdir on the process; the working
+    This never calls os.chdir on the process; the working
     directory is passed to the subprocess instead, which is safe under a server
     handling concurrent requests.
     """
@@ -54,6 +54,8 @@ def run_bellhop():
             config.SHD_FILE.unlink()
 
         command = [str(config.BELLHOP_EXE), config.ENV_STEM]
+
+        # For running on MAC
         if config.USE_WINE:
             command.insert(0, "wine")
 

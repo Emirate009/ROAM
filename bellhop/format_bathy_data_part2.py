@@ -308,7 +308,7 @@ def process_bathymetry(df, sample_step=1):
 def main():
     combined_df = combine_bathy_files()
 
-    # Keep every point while diagnosing the missing-data issue.
+    # Keep every point while diagnosing any missing-data issues.
     processed_df = process_bathymetry(
         combined_df,
         sample_step=20,

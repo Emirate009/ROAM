@@ -11,10 +11,11 @@ from .errors import InputError
 
 
 def _load_getSSP():
-    """Import the Ocean Navigator helper lazily; it is only needed for the
-    'use current SSP' path and pulls in network dependencies."""
+    """
+    Import the Ocean Navigator helper script if it is installed, otherwise return None.
+    """
     try:
-        from ocean_navigator_api_script_csv import getSSP
+        from .ocean_navigator_api_script_csv import getSSP
 
         return getSSP
     except ImportError:
@@ -39,12 +40,10 @@ def read_ssp(ssp_file):
 
 
 def determine_ssp(date_string, ssp_dir=None):
-    """Pick the archived CTD cast closest to `date_string` (yyyymmdd).
+    """
+    Pick the archived CTD cast closest to `date_string` (yyyymmdd).
 
     Falls back to any cast from the same month if nothing is within 14 days.
-
-    Fixes a bug in the original: `abs(difference < 14)` compared a bool, so the
-    14-day window never applied. It is now `abs(difference) < 14`.
     """
     ssp_dir = Path(ssp_dir or config.SSP_DIR)
     if not ssp_dir.is_dir():
@@ -131,8 +130,8 @@ def profile_for_plot(ssp_file):
     """Depth/speed arrays for the SSP figure, cleaned the way the GUI did.
 
     Real CTD casts start a few metres down and their first reading is often
-    noisy, so the GUI discarded it in favour of the 6th sample. Skip that for
-    a profile that already starts at the surface (e.g. a manually entered
+    noisy, so the previous Nanoose Bay version discarded it in favour of the 6th sample. 
+    Skip that for a profile that already starts at the surface (e.g. a manually entered
     one) -- there is no noisy first reading to discard, and doing it anyway
     overwrites a real 0 m value with one from several hundred metres down.
     """

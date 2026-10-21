@@ -1,5 +1,6 @@
-"""Request/response models. Validation that used to be scattered through the
-tkinter callbacks now happens here, before any file is written."""
+"""
+Request/response models. Validation happens here before any file is written.
+"""
 
 from typing import Any, List, Literal, Optional
 
@@ -7,8 +8,8 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class ScenarioParams(BaseModel):
-    x: float = Field(..., description="Source easting in local metres")
-    y: float = Field(..., description="Source northing in local metres")
+    lat: float = Field(..., ge=-90, le=90, description="Source latitude, degrees")
+    lon: float = Field(..., ge=-180, le=180, description="Source longitude, degrees")
     bearing: float = Field(..., ge=0, le=360, description="Compass bearing, degrees")
 
     frequency: int = Field(7500, gt=0, description="Hz")
@@ -62,5 +63,5 @@ class RunResponse(BaseModel):
 
 class ArrayPreset(BaseModel):
     name: str
-    x: float
-    y: float
+    lat: float
+    lon: float
