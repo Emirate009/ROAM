@@ -9,7 +9,7 @@ from .ssp import read_ssp
 
 # Beam / run-type settings
 RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
-NUMBER_OF_BEAMS = 0   # Number of beams to use
+NUMBER_OF_BEAMS = 100   # Number of beams to use
 MIN_ANGLE = -89.0        # Minimum launch angle in degrees
 MAX_ANGLE = 89.0         # Maximum launch angle in degrees
 RAY_STEP = 0             # 0 = let Bellhop choose
@@ -77,8 +77,8 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
     ssp_depth, ssp_speed, notes = _fit_ssp_to_model_depth(
         ssp_depth, ssp_speed, max_model_depth
     )
-    
-    number_of_ranges = int(dist_km*1000)
+
+    number_of_ranges = int(5001)
     number_receiver_depths = int(np.ceil(max_model_depth)) + 1
     rbox = dist_km + 1.0  # computational box slightly beyond the last receiver
 

@@ -8,7 +8,7 @@ Dummy parameter NMedia = 1
     Attenuation units: dB/wavelength
     VACUUM
 
-  Depth =   2.26e+03  m
+  Depth =   2.51e+03  m
 
 Sound speed profile:
       z         alphaR      betaR     rho        alphaI     betaI
@@ -53,36 +53,36 @@ Sound speed profile:
 1.68e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
 1.94e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
 2.23e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
-2.26e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+2.51e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
 
  RMS roughness =  0.000e+00
     Bathymetry file selected
     ACOUSTO-ELASTIC half-space
-  2.26e+03   1.60e+03   1.50e+00 5.00e-01 0.0000e+00 0.0000e+00
+  2.51e+03   1.60e+03   1.50e+00 5.00e-01 0.0000e+00 0.0000e+00
 
 __________________________________________________________________________
 
    Number of Source   z-coordinates, Sz = 1
    Source   z-coordinates, Sz (m)
-     2.000000e+02 
+     1.000000e+02 
 
 
 __________________________________________________________________________
 
-   Number of Receiver z-coordinates, Rz = 2257
+   Number of Receiver z-coordinates, Rz = 2514
    Receiver z-coordinates, Rz (m)
      0.000000e+00   1.000000e+00   2.000000e+00   3.000000e+00   4.000000e+00 
      5.000000e+00   6.000000e+00   7.000000e+00   8.000000e+00   9.000000e+00 
-   ...   2.256000e+03
+   ...   2.513000e+03
 
 
 __________________________________________________________________________
 
    Number of Receiver r-coordinates, Rr = 5001
    Receiver r-coordinates, Rr (km)
-     0.000000e+00   1.000000e-03   2.000000e-03   3.000000e-03   4.000000e-03 
-     5.000001e-03   6.000000e-03   7.000000e-03   8.000000e-03   9.000001e-03 
-   ...   5.000000e+00
+     0.000000e+00   2.000000e-03   4.000000e-03   6.000000e-03   8.000000e-03 
+     1.000000e-02   1.200000e-02   1.400000e-02   1.600000e-02   1.800000e-02 
+   ...   1.000000e+01
 
 
 Coherent TL calculation
@@ -91,25 +91,25 @@ Point source (cylindrical coordinates)
 Rectilinear receiver grid: Receivers at Rr[:] x Rz[:]
 __________________________________________________________________________
 
-   Number of beams in elevation   = 4000
+   Number of beams in elevation   = 100
    Beam take-off angles (degrees)
- -8.900000e+01  -8.895549e+01  -8.891098e+01  -8.886647e+01  -8.882196e+01 
- -8.877744e+01  -8.873293e+01  -8.868842e+01  -8.864391e+01  -8.859940e+01 
+ -8.900000e+01  -8.720202e+01  -8.540404e+01  -8.360606e+01  -8.180808e+01 
+ -8.001010e+01  -7.821212e+01  -7.641414e+01  -7.461616e+01  -7.281818e+01 
 ...   8.900000e+01
 
 __________________________________________________________________________
 
 
- Step length,       deltas =  2.2560e+02 m
+ Step length,       deltas =  2.5130e+02 m
 
-Maximum ray depth, Box.y  =  2.3060e+03 m
-Maximum ray range, Box.x  =  6.0000e+00km
+Maximum ray depth, Box.y  =  2.5630e+03 m
+Maximum ray range, Box.x  =  1.1000e+01km
 
 Geometric Gaussian beams
 No beam shift in effect
 
 
- Step length,       deltas = 2.2560e+02 m (automatically selected)
+ Step length,       deltas = 2.5130e+02 m (automatically selected)
 Piecewise linear interpolation
 Number of altimetry points = 2
 
@@ -122,27 +122,27 @@ Number of bathymetry points = 32
 Short format (bathymetry only)
 
  Range (km)  Depth (m)
-0.000e+00 2.241e+03
-1.724e-01 2.254e+03
-3.448e-01 2.248e+03
-5.172e-01 2.244e+03
-6.897e-01 2.230e+03
-8.621e-01 2.177e+03
-1.034e+00 2.116e+03
-1.207e+00 2.055e+03
-1.379e+00 1.975e+03
-1.552e+00 1.884e+03
-1.724e+00 1.820e+03
-1.897e+00 1.819e+03
-2.069e+00 1.835e+03
-2.241e+00 1.868e+03
-2.414e+00 1.925e+03
-2.586e+00 1.953e+03
-2.759e+00 1.959e+03
-2.931e+00 1.966e+03
-3.103e+00 1.964e+03
-3.276e+00 1.917e+03
-5.000e+00 1.917e+03
+0.000e+00 2.512e+03
+3.448e-01 2.510e+03
+6.897e-01 2.506e+03
+1.034e+00 2.480e+03
+1.379e+00 2.436e+03
+1.724e+00 2.401e+03
+2.069e+00 2.370e+03
+2.414e+00 2.330e+03
+2.759e+00 2.293e+03
+3.103e+00 2.262e+03
+3.448e+00 2.246e+03
+3.793e+00 2.246e+03
+4.138e+00 2.265e+03
+4.483e+00 2.253e+03
+4.828e+00 2.277e+03
+5.172e+00 2.247e+03
+5.517e+00 2.230e+03
+5.862e+00 2.259e+03
+6.207e+00 2.152e+03
+6.552e+00 2.026e+03
+1.000e+01 1.869e+03
 Number of source beam pattern points 2
 
  Angle (degrees)  Power (dB)

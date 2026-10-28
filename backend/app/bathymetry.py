@@ -2,9 +2,10 @@
 
 from functools import lru_cache
 
+import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
-from scipy.interpolate import griddata
+from scipy.spatial import Delaunay
 
 from . import config
 from .errors import InputError
@@ -28,6 +29,26 @@ def load_grid():
     )
     xy = np.column_stack((df["x"].to_numpy(), df["y"].to_numpy()))
     return xy, df["Depth"].to_numpy()
+
+
+@lru_cache(maxsize=1)
+def _depth_interpolator():
+    """Linear interpolator over the grid's Delaunay triangulation, built once (~1 s).
+
+    Same triangles and values as griddata(method="linear"), but griddata
+    re-triangulates on every call and SciPy's point search takes 8-16 s on
+    this irregular grid; matplotlib's trapezoid-map search takes ~1 ms.
+    """
+    xy, depth_data = load_grid()
+    tri = Delaunay(xy)
+    triangulation = mtri.Triangulation(xy[:, 0], xy[:, 1], triangles=tri.simplices)
+    return mtri.LinearTriInterpolator(triangulation, depth_data)
+
+
+def _interpolate_depth(points):
+    """Depth at each (x, y) point; NaN outside the gridded area."""
+    depth = _depth_interpolator()(points[:, 0], points[:, 1])
+    return np.ma.filled(depth.astype(float), np.nan)
 
 
 @lru_cache(maxsize=1)
@@ -56,8 +77,7 @@ def bathymetry_slice(x, y, bearing, raylength, resolution=RESOLUTION):
     y_line = np.linspace(y, end_y, resolution)
     line_xy = np.column_stack((x_line, y_line))
 
-    xy, depth_data = load_grid()
-    bathy_depth = griddata(xy, depth_data, line_xy, method="linear")
+    bathy_depth = _interpolate_depth(line_xy)
 
     if np.isnan(bathy_depth).any():
         raise InputError(
