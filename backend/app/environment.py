@@ -78,7 +78,8 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         ssp_depth, ssp_speed, max_model_depth
     )
 
-    number_of_ranges = int(5001)
+    # One receiver range per metre, matching the 1 m receiver-depth spacing.
+    number_of_ranges = int(round(dist_km * 1000)) + 1
     number_receiver_depths = int(np.ceil(max_model_depth)) + 1
     rbox = dist_km + 1.0  # computational box slightly beyond the last receiver
 
