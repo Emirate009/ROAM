@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import threading
+import time
 
 import numpy as np
 
@@ -42,7 +43,30 @@ def tl_diagnostics(tl):
     }
 
 
-def run_bellhop():
+def _run_with_progress(command, progress):
+    """subprocess.run equivalent that redraws the progress bar about once a second."""
+    process = subprocess.Popen(
+        command,
+        cwd=str(config.BELLHOP_DIR),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    deadline = time.monotonic() + config.BELLHOP_TIMEOUT_SECONDS
+    while True:
+        try:
+            stdout, stderr = process.communicate(timeout=1)
+            return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+        except subprocess.TimeoutExpired:
+            if time.monotonic() > deadline:
+                process.kill()
+                process.communicate()
+                raise
+            if progress is not None:
+                progress.refresh()
+
+
+def run_bellhop(progress=None, label=""):
     """Execute Bellhop on the current WG_.env / WG_.bty and return the TL array.
 
     This never calls os.chdir on the process; the working
@@ -60,13 +84,7 @@ def run_bellhop():
             command.insert(0, "wine")
 
         try:
-            result = subprocess.run(
-                command,
-                cwd=str(config.BELLHOP_DIR),
-                text=True,
-                capture_output=True,
-                timeout=config.BELLHOP_TIMEOUT_SECONDS,
-            )
+            result = _run_with_progress(command, progress)
         except FileNotFoundError as exc:
             raise ModelError(f"Could not launch Bellhop ({command[0]}): {exc}")
         except subprocess.TimeoutExpired:
@@ -86,6 +104,8 @@ def run_bellhop():
                 "type is a transmission-loss mode such as 'CB'."
             )
 
+        if progress is not None:
+            progress.step(f"{label}Reading TL")
         pressure, _geometry = _readshd(str(config.SHD_FILE), np.nan, np.nan, np.nan)
 
     p = np.squeeze(pressure, axis=(0, 1))
