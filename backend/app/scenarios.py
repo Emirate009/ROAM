@@ -79,6 +79,7 @@ def run_standard(params, ssp_file):
             params.range_m,
             params.source_level,
             params.ambient_level,
+            params.frequency,
         ),
         plots.ssp_figure(ssp_depth, ssp_speed, str(ssp_file)),
     ]

@@ -9,11 +9,10 @@ from .ssp import read_ssp
 
 # Beam / run-type settings
 RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
-NUMBER_OF_BEAMS = 4000   # Number of beams to use
+NUMBER_OF_BEAMS = 0   # Number of beams to use
 MIN_ANGLE = -89.0        # Minimum launch angle in degrees
 MAX_ANGLE = 89.0         # Maximum launch angle in degrees
 RAY_STEP = 0             # 0 = let Bellhop choose
-NUMBER_OF_RANGES = 5001  # Number of ranges to use
 
 
 @dataclass
@@ -78,7 +77,8 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
     ssp_depth, ssp_speed, notes = _fit_ssp_to_model_depth(
         ssp_depth, ssp_speed, max_model_depth
     )
-
+    
+    number_of_ranges = int(dist_km*1000)
     number_receiver_depths = int(np.ceil(max_model_depth)) + 1
     rbox = dist_km + 1.0  # computational box slightly beyond the last receiver
 
@@ -96,7 +96,7 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         envfile.write(f"{source_depth} /             ! SD(1:NSD) (m)\n")
         envfile.write(f"{number_receiver_depths}              ! NRD\n")
         envfile.write(f"0.0 {max_model_depth} /          ! RD(1:NRD) (m)\n")
-        envfile.write(f"{NUMBER_OF_RANGES}             ! NR\n")
+        envfile.write(f"{number_of_ranges}             ! NR\n")
         envfile.write(f"0.0  {dist_km} /      ! R(1:NR) (km)\n")
         envfile.write(f"'{RUN_TYPE}'          ! Incoherent TL, Gaussian beams\n")
         envfile.write(f"{NUMBER_OF_BEAMS}     ! NBeams\n")
@@ -109,7 +109,7 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
     return EnvInfo(
         max_model_depth=max_model_depth,
         number_receiver_depths=number_receiver_depths,
-        number_of_ranges=NUMBER_OF_RANGES,
+        number_of_ranges=number_of_ranges,
         ssp_depth=[float(v) for v in ssp_depth],
         ssp_speed=[float(v) for v in ssp_speed],
         notes=notes,

@@ -16,6 +16,7 @@ from shapely import MultiPoint, concave_hull  # noqa: E402
 from . import sites  # noqa: E402
 from .bathymetry import load_grid_frame  # noqa: E402
 from .geometry import calculate_terminus_points  # noqa: E402
+from scipy.ndimage import uniform_filter1d
 
 DPI = 110
 
@@ -74,21 +75,54 @@ def ssp_figure(ssp_depth, ssp_speed, label):
     return _encode(fig, f"SSP: {label}")
 
 
-def tl_slice_figure(tl, receiver_depth, raylength_m, source_level, ambient_level):
+def tl_slice_figure(tl, receiver_depth, raylength_m, source_level, ambient_level, frequency):
     """TL versus range at one receiver depth, with the figure-of-merit line."""
     row = int(round(receiver_depth))
     row = max(0, min(row, tl.shape[0] - 1))
 
+    tl_db = [-value for value in tl[row]]
+
     fig, ax = plt.subplots(figsize=(10, 5))
     slice_x = np.linspace(0, raylength_m, tl.shape[1])
-    ax.plot(slice_x, [-value for value in tl[row]], label="Transmission loss")
 
     fom = -(source_level - ambient_level)
-    ax.plot([0, raylength_m], [fom, fom], color="red", linewidth=3, label="Figure of merit")
+
+    # Average the TL curve to reduce noise and get a more stable figure-of-merit.
+    spacing = np.median(np.diff(slice_x))
+    window = max(1, round(50 / spacing))
+
+    tl_db_smooth = -np.asarray(tl[row], dtype=float)
+
+    valid = np.isfinite(tl_db_smooth)
+
+    tl_db_smooth[~valid] = np.interp(
+        slice_x[~valid],
+        slice_x[valid],
+        tl_db_smooth[valid]
+    )
+
+    smoothed_tl = uniform_filter1d(
+        tl_db_smooth,
+        size=window,
+    )
+
+    smoothed_detected = smoothed_tl >= fom
+
+    # Farthest detectable point after smoothing
+    smoothed_indices = np.where(smoothed_detected)[0]
+    smoothed_range = (
+        slice_x[smoothed_indices[-1]]
+        if len(smoothed_indices) else np.nan
+    )
+
+    ax.plot(slice_x, tl_db, label="Transmission Loss")
+    ax.plot(slice_x, smoothed_tl, label=f"Smoothed Transmission Loss", color="orange")
+    ax.plot([0, raylength_m], [fom, fom], color="red", label=f"Figure of Merit: {fom:.1f} dB")
+    ax.plot([smoothed_range], [fom], 'ro', markersize=6, label=f"Detectable Range: {smoothed_range:.1f} m")
 
     ax.set_xlabel("Range (m)")
     ax.set_ylabel("Transmission loss (dB)")
-    ax.set_title(f"TL at {receiver_depth} metres")
+    ax.set_title(f"TL at {receiver_depth} metres and {frequency} Hz")
     ax.legend(loc="lower left")
     ax.grid(alpha=0.3)
     return _encode(fig, f"TL at {receiver_depth} m")
