@@ -9,10 +9,17 @@ from .ssp import read_ssp
 
 # Beam / run-type settings
 RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
-NUMBER_OF_BEAMS = 100   # Number of beams to use
+NUMBER_OF_BEAMS = 0   # Number of beams to use (0 = Bellhop's automatic choice, capped at MAX_BEAMS)
+MAX_BEAMS = 1000         # Bellhop's automatic choice grows with range x frequency
 MIN_ANGLE = -89.0        # Minimum launch angle in degrees
 MAX_ANGLE = 89.0         # Maximum launch angle in degrees
 RAY_STEP = 0             # 0 = let Bellhop choose
+
+# Receiver grid. Bellhop's run time scales with (receiver ranges x depths x beams),
+# so the grid is capped rather than fixed at 1 m spacing: 1 m spacing at 10 km
+# gave 25M receivers and an ~8 min run; at 50 km it would take hours.
+MAX_NUMBER_OF_RANGES = 2001     # 1 m spacing up to 2 km, coarser beyond
+RECEIVER_DEPTH_STEP_M = 10.0    # target receiver depth spacing
 
 
 @dataclass
@@ -20,7 +27,9 @@ class EnvInfo:
 
     max_model_depth: float
     number_receiver_depths: int
+    receiver_depth_step: float
     number_of_ranges: int
+    number_of_beams: int
     ssp_depth: list
     ssp_speed: list
     notes: list
@@ -60,6 +69,15 @@ def _fit_ssp_to_model_depth(ssp_depth, ssp_speed, max_model_depth):
     return ssp_depth, ssp_speed, notes
 
 
+def _number_of_beams(dist_km, freq):
+    """NUMBER_OF_BEAMS, or Bellhop's own automatic choice capped at MAX_BEAMS."""
+    if NUMBER_OF_BEAMS > 0:
+        return NUMBER_OF_BEAMS
+    # Bellhop's rule for NBeams = 0, with a nominal 1500 m/s sound speed.
+    automatic = max(int(0.3 * dist_km * 1000.0 * freq / 1500.0), 300)
+    return min(automatic, MAX_BEAMS)
+
+
 def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
     """
     Write the Bellhop environment file.
@@ -78,9 +96,12 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         ssp_depth, ssp_speed, max_model_depth
     )
 
-    # One receiver range per metre, matching the 1 m receiver-depth spacing.
-    number_of_ranges = int(round(dist_km * 1000)) + 1
-    number_receiver_depths = int(np.ceil(max_model_depth)) + 1
+    # One receiver range per metre, up to MAX_NUMBER_OF_RANGES.
+    number_of_ranges = min(int(round(dist_km * 1000)) + 1, MAX_NUMBER_OF_RANGES)
+    # Receivers evenly spaced from 0 m to the model depth, about RECEIVER_DEPTH_STEP_M apart.
+    number_receiver_depths = int(np.ceil(max_model_depth / RECEIVER_DEPTH_STEP_M)) + 1
+    receiver_depth_step = max_model_depth / (number_receiver_depths - 1)
+    number_of_beams = _number_of_beams(dist_km, freq)
     rbox = dist_km + 1.0  # computational box slightly beyond the last receiver
 
     with open(path, "w") as envfile:
@@ -100,7 +121,7 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         envfile.write(f"{number_of_ranges}             ! NR\n")
         envfile.write(f"0.0  {dist_km} /      ! R(1:NR) (km)\n")
         envfile.write(f"'{RUN_TYPE}'          ! Incoherent TL, Gaussian beams\n")
-        envfile.write(f"{NUMBER_OF_BEAMS}     ! NBeams\n")
+        envfile.write(f"{number_of_beams}     ! NBeams\n")
         envfile.write(f"{MIN_ANGLE} {MAX_ANGLE} / ! ALPHA1, ALPHA2 degrees\n")
         envfile.write(
             f"{RAY_STEP} {max_model_depth + 50} {rbox} "
@@ -110,7 +131,9 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
     return EnvInfo(
         max_model_depth=max_model_depth,
         number_receiver_depths=number_receiver_depths,
+        receiver_depth_step=receiver_depth_step,
         number_of_ranges=number_of_ranges,
+        number_of_beams=number_of_beams,
         ssp_depth=[float(v) for v in ssp_depth],
         ssp_speed=[float(v) for v in ssp_speed],
         notes=notes,

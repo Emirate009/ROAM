@@ -63,11 +63,12 @@ def run_standard(params, ssp_file, progress):
         progress,
     )
     tl = run["tl"]
+    env = run["env"]
 
-    if params.receiver_depth >= tl.shape[0]:
+    if params.receiver_depth > env.max_model_depth:
         raise InputError(
             f"Receiver depth ({params.receiver_depth} m) is below the deepest "
-            f"modelled receiver ({tl.shape[0] - 1} m) on this slice."
+            f"modelled receiver ({env.max_model_depth:g} m) on this slice."
         )
 
     progress.step("Plotting")
@@ -85,6 +86,7 @@ def run_standard(params, ssp_file, progress):
         plots.tl_slice_figure(
             tl,
             params.receiver_depth,
+            env.receiver_depth_step,
             params.range_m,
             params.source_level,
             params.ambient_level,
@@ -96,10 +98,8 @@ def run_standard(params, ssp_file, progress):
     return {
         "plots": figures,
         "diagnostics": run["diagnostics"],
-        "notes": run["env"].notes,
-        "receiver_spacing_m": round(
-            float(np.max(run["bathy_depth"])) / max(tl.shape[0] - 1, 1), 3
-        ),
+        "notes": env.notes,
+        "receiver_spacing_m": round(env.receiver_depth_step, 3),
     }
 
 
