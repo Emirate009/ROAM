@@ -2,15 +2,16 @@
 
 from functools import lru_cache
 
+import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
-from scipy.interpolate import griddata
+from scipy.spatial import Delaunay
 
 from . import config
 from .errors import InputError
 from .geometry import calculate_terminus_points
 
-RESOLUTION = 30  # number of samples along the slice
+BATHY_STEP_M = 100.0  # spacing of bathymetry samples along the slice (grid is ~150-250 m)
 
 
 @lru_cache(maxsize=1)
@@ -31,6 +32,26 @@ def load_grid():
 
 
 @lru_cache(maxsize=1)
+def _depth_interpolator():
+    """Linear interpolator over the grid's Delaunay triangulation, built once (~1 s).
+
+    Same triangles and values as griddata(method="linear"), but griddata
+    re-triangulates on every call and SciPy's point search takes 8-16 s on
+    this irregular grid; matplotlib's trapezoid-map search takes ~1 ms.
+    """
+    xy, depth_data = load_grid()
+    tri = Delaunay(xy)
+    triangulation = mtri.Triangulation(xy[:, 0], xy[:, 1], triangles=tri.simplices)
+    return mtri.LinearTriInterpolator(triangulation, depth_data)
+
+
+def _interpolate_depth(points):
+    """Depth at each (x, y) point; NaN outside the gridded area."""
+    depth = _depth_interpolator()(points[:, 0], points[:, 1])
+    return np.ma.filled(depth.astype(float), np.nan)
+
+
+@lru_cache(maxsize=1)
 def load_grid_frame():
     """Full grid as a DataFrame (lat/lon/depth/x/y) for the overview map."""
     return pd.read_csv(
@@ -42,22 +63,24 @@ def load_grid_frame():
     )
 
 
-def bathymetry_slice(x, y, bearing, raylength, resolution=RESOLUTION):
-    """Interpolate depth along the scenario slice.
+def bathymetry_slice(x, y, bearing, raylength, step=BATHY_STEP_M):
+    """Interpolate depth along the scenario slice, every `step` metres from the source.
 
-    Returns (bathy_range_m, bathy_depth_m), both length `resolution`.
+    Samples sit at the same ranges whatever the slice length, so a 40 km run
+    sees the same seabed over its first 10 km as a 10 km run does. A fixed
+    sample count did not: 30 samples over 40 km missed features near the source.
+
+    Returns (bathy_range_m, bathy_depth_m).
     Raises InputError if the slice leaves the gridded area.
     """
     end_x, end_y, _ = calculate_terminus_points(x, y, bearing, raylength, kind="PCS")
 
-    # linspace instead of arange: guarantees exactly `resolution` samples and
-    # avoids zero-step / mismatched-length special cases
-    x_line = np.linspace(x, end_x, resolution)
-    y_line = np.linspace(y, end_y, resolution)
-    line_xy = np.column_stack((x_line, y_line))
+    bathy_range = np.arange(0.0, raylength, step)
+    bathy_range = np.append(bathy_range, float(raylength))  # always end at the last receiver
+    fraction = bathy_range / raylength
+    line_xy = np.column_stack((x + fraction * (end_x - x), y + fraction * (end_y - y)))
 
-    xy, depth_data = load_grid()
-    bathy_depth = griddata(xy, depth_data, line_xy, method="linear")
+    bathy_depth = _interpolate_depth(line_xy)
 
     if np.isnan(bathy_depth).any():
         raise InputError(
@@ -65,7 +88,6 @@ def bathymetry_slice(x, y, bearing, raylength, resolution=RESOLUTION):
             "Move the source inside the gridded area or shorten the range."
         )
 
-    bathy_range = np.linspace(0.0, raylength, resolution)
     return bathy_range, bathy_depth
 
 

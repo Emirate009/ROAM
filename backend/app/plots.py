@@ -75,9 +75,9 @@ def ssp_figure(ssp_depth, ssp_speed, label):
     return _encode(fig, f"SSP: {label}")
 
 
-def tl_slice_figure(tl, receiver_depth, raylength_m, source_level, ambient_level, frequency):
+def tl_slice_figure(tl, receiver_depth, receiver_depth_step, raylength_m, source_level, ambient_level, frequency):
     """TL versus range at one receiver depth, with the figure-of-merit line."""
-    row = int(round(receiver_depth))
+    row = int(round(receiver_depth / receiver_depth_step))
     row = max(0, min(row, tl.shape[0] - 1))
 
     tl_db = [-value for value in tl[row]]
@@ -112,7 +112,7 @@ def tl_slice_figure(tl, receiver_depth, raylength_m, source_level, ambient_level
     smoothed_indices = np.where(smoothed_detected)[0]
     smoothed_range = (
         slice_x[smoothed_indices[-1]]
-        if len(smoothed_indices) else np.nan
+        if len(smoothed_indices) else 0
     )
 
     ax.plot(slice_x, tl_db, label="Transmission Loss")
