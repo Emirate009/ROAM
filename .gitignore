@@ -28,7 +28,7 @@ bellhop/icon.ico
 start.sh
 frontend/src/*.txt
 
-bellhop/WG_*
+bellhop/WG*
 
 # macOS
 .DS_Store
