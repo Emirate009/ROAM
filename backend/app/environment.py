@@ -8,9 +8,11 @@ from . import config
 from .ssp import read_ssp
 
 # Beam / run-type settings
-RUN_TYPE = "CB"          # incoherent TL, Gaussian beams
+RUN_TYPE = "CB"          # 'C' = coherent TL ('I' incoherent, 'S' semi-coherent), 'B' = Gaussian beams
+# Fixed so a long run matches a short one over their shared ranges; the
+# coherent interference pattern changes with the beam count.
 NUMBER_OF_BEAMS = 0   # Number of beams to use (0 = Bellhop's automatic choice, capped at MAX_BEAMS)
-MAX_BEAMS = 1000         # Bellhop's automatic choice grows with range x frequency
+MAX_BEAMS = 3000         # Bellhop's automatic choice grows with range x frequency
 MIN_ANGLE = -89.0        # Minimum launch angle in degrees
 MAX_ANGLE = 89.0         # Maximum launch angle in degrees
 RAY_STEP = 0             # 0 = let Bellhop choose
@@ -120,7 +122,7 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         envfile.write(f"0.0 {max_model_depth} /          ! RD(1:NRD) (m)\n")
         envfile.write(f"{number_of_ranges}             ! NR\n")
         envfile.write(f"0.0  {dist_km} /      ! R(1:NR) (km)\n")
-        envfile.write(f"'{RUN_TYPE}'          ! Incoherent TL, Gaussian beams\n")
+        envfile.write(f"'{RUN_TYPE}'          ! RUN TYPE\n")
         envfile.write(f"{number_of_beams}     ! NBeams\n")
         envfile.write(f"{MIN_ANGLE} {MAX_ANGLE} / ! ALPHA1, ALPHA2 degrees\n")
         envfile.write(
