@@ -28,7 +28,7 @@ def tl_diagnostics(tl):
     """Summary stats that used to be printed to the terminal."""
     finite = np.asarray(tl)[np.isfinite(tl)]
     if finite.size == 0:
-        raise ModelError("Transmission loss contains no finite values.")
+        raise ModelError("Transmission loss contains no finite values. Check input parameters are valid for given environment")
 
     levels = [0, 1, 5, 25, 50, 75, 95, 99, 100]
     values = np.percentile(finite, levels)

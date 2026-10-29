@@ -112,7 +112,7 @@ def tl_slice_figure(tl, receiver_depth, receiver_depth_step, raylength_m, source
     smoothed_indices = np.where(smoothed_detected)[0]
     smoothed_range = (
         slice_x[smoothed_indices[-1]]
-        if len(smoothed_indices) else np.nan
+        if len(smoothed_indices) else 0
     )
 
     ax.plot(slice_x, tl_db, label="Transmission Loss")
