@@ -39,7 +39,7 @@ def _encode(fig, title, tight=True):
     return {"title": title, "image": f"data:image/png;base64,{encoded}"}
 
 
-def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, dist_km):
+def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, dist_km, tight=True):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     deepest_model_depth = int(np.ceil(max(bathy_depth) + 1))
@@ -62,7 +62,9 @@ def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, 
     ax.set_ylabel("Depth (m)")
     ax.set_title(title)
 
-    return _encode(fig, title)
+    if not tight:
+        fig.tight_layout()
+    return _encode(fig, title, tight=tight)
 
 
 def ssp_figure(ssp_depth, ssp_speed, label):
@@ -75,8 +77,11 @@ def ssp_figure(ssp_depth, ssp_speed, label):
     return _encode(fig, f"SSP: {label}")
 
 
-def tl_slice_figure(tl, receiver_depth, receiver_depth_step, raylength_m, source_level, ambient_level, frequency):
-    """TL versus range at one receiver depth, with the figure-of-merit line."""
+def tl_slice_figure(tl, receiver_depth, receiver_depth_step, raylength_m, source_level, ambient_level, frequency, ylim=None, tight=True):
+    """TL versus range at one receiver depth, with the figure-of-merit line.
+
+    ylim fixes the TL axis, so a depth sweep's slices share one scale.
+    """
     row = int(round(receiver_depth / receiver_depth_step))
     row = max(0, min(row, tl.shape[0] - 1))
 
@@ -125,7 +130,11 @@ def tl_slice_figure(tl, receiver_depth, receiver_depth_step, raylength_m, source
     ax.set_title(f"TL at {receiver_depth} metres and {frequency} Hz")
     ax.legend(loc="lower left")
     ax.grid(alpha=0.3)
-    return _encode(fig, f"TL at {receiver_depth} m")
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+    if not tight:
+        fig.tight_layout()
+    return _encode(fig, f"TL at {receiver_depth} m", tight=tight)
 
 
 @lru_cache(maxsize=1)

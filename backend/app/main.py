@@ -1,4 +1,5 @@
 import logging
+import threading
 import traceback
 from typing import List, Optional
 
@@ -10,6 +11,7 @@ from fastapi.responses import JSONResponse
 from backend.app import create_ssp
 
 from . import config, plots, scenarios, sites
+from .bathymetry import water_depth_at
 from .errors import InputError, ModelError
 from .schemas import ArrayPreset, RunResponse, ScenarioParams
 from .ssp import delete_ssp, resolve_ssp
@@ -83,6 +85,29 @@ def health():
         "ssp_dir_exists": config.SSP_DIR.is_dir(),
         "use_wine": config.USE_WINE,
     }
+
+
+@app.on_event("startup")
+def warm_water_depth_lookup():
+    """Build the water-depth interpolator in the background, so the first
+    /api/water-depth call answers immediately instead of after ~1 s."""
+    if config.GRID_FILE.exists():
+        threading.Thread(
+            target=water_depth_at, args=(0.0, 0.0), daemon=True
+        ).start()
+
+
+@app.get("/api/water-depth")
+async def water_depth(lat: float = Query(...), lon: float = Query(...)):
+    """Water depth at the source, which bounds how deep a source can be placed."""
+    if not config.GRID_FILE.exists():
+        raise HTTPException(
+            status_code=503,
+            detail=f"Bathymetry grid not found at {config.GRID_FILE}.",
+        )
+    x, y = sites.lonlat_to_local_metres(lon, lat)
+    depth = await run_in_threadpool(water_depth_at, x, y)
+    return {"water_depth_m": None if depth is None else round(depth, 1)}
 
 
 @app.get("/api/arrays", response_model=List[ArrayPreset])
@@ -189,5 +214,7 @@ async def run_scenario(params: ScenarioParams):
         plots=result["plots"],
         diagnostics=result.get("diagnostics"),
         notes=result.get("notes", []),
+        warnings=result.get("warnings", []),
         receiver_spacing_m=result.get("receiver_spacing_m"),
+        sweep_frames=result.get("sweep_frames", []),
     )

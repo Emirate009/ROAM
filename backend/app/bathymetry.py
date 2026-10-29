@@ -5,6 +5,7 @@ from functools import lru_cache
 import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
+from scipy.ndimage import gaussian_filter1d
 from scipy.spatial import Delaunay
 
 from . import config
@@ -12,6 +13,13 @@ from .errors import InputError
 from .geometry import calculate_terminus_points
 
 BATHY_STEP_M = 100.0  # spacing of bathymetry samples along the slice (grid is ~150-250 m)
+# Sampling the triangulated grid every 100 m leaves sharp kinks wherever the
+# slice crosses a triangle edge (e.g. +11 deg to -13 deg within 200 m). Bellhop's
+# Gaussian beams blow up on such kinks: on one 80 km slice, rays reflected back
+# off the slope returned 27x stronger than the direct path, painting bands of
+# TL < 40 dB at 50 km. Smoothing at the grid's own scale removes the kinks
+# without losing features the grid actually resolves.
+BATHY_SMOOTH_SIGMA_M = 300.0
 
 
 @lru_cache(maxsize=1)
@@ -51,6 +59,12 @@ def _interpolate_depth(points):
     return np.ma.filled(depth.astype(float), np.nan)
 
 
+def water_depth_at(x, y):
+    """Water depth (m) at one point in local metres, or None outside the grid."""
+    depth = float(_interpolate_depth(np.array([[x, y]]))[0])
+    return None if np.isnan(depth) else depth
+
+
 @lru_cache(maxsize=1)
 def load_grid_frame():
     """Full grid as a DataFrame (lat/lon/depth/x/y) for the overview map."""
@@ -88,6 +102,7 @@ def bathymetry_slice(x, y, bearing, raylength, step=BATHY_STEP_M):
             "Move the source inside the gridded area or shorten the range."
         )
 
+    bathy_depth = gaussian_filter1d(bathy_depth, BATHY_SMOOTH_SIGMA_M / step, mode="nearest")
     return bathy_range, bathy_depth
 
 

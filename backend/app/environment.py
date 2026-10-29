@@ -23,6 +23,27 @@ RAY_STEP = 0             # 0 = let Bellhop choose
 MAX_NUMBER_OF_RANGES = 2001     # 1 m spacing up to 2 km, coarser beyond
 RECEIVER_DEPTH_STEP_M = 10.0    # target receiver depth spacing
 
+# Depth sweep grid. A sweep solves every source depth in one run, so its cost
+# is (number of depths) x (the cost of one run); a coarser grid keeps a
+# 10-depth sweep to a few minutes. The sweep's plots are ~1000 px wide, so
+# finer range spacing than this would not be visible anyway.
+SWEEP_MAX_NUMBER_OF_RANGES = 1001
+SWEEP_RECEIVER_DEPTH_STEP_M = 20.0
+# Up to SWEEP_FINE_MAX_RANGE_M the near-field interference is steep enough
+# that 20 m rows look blocky, so short sweeps get about one receiver row per
+# plot pixel instead. Run time is roughly linear in receivers, not range: a
+# 10-depth, 5 km sweep took ~17 s at 20 m rows and ~45 s at 3 m rows.
+SWEEP_FINE_MAX_RANGE_M = 10000.0
+SWEEP_FINE_RECEIVER_DEPTHS = 501
+
+
+def sweep_receiver_depth_step(dist_km, deepest_bathy):
+    """Receiver depth spacing for a depth sweep: fine for short ranges, coarse beyond."""
+    if dist_km * 1000.0 > SWEEP_FINE_MAX_RANGE_M:
+        return SWEEP_RECEIVER_DEPTH_STEP_M
+    max_model_depth = float(np.ceil(deepest_bathy + 1.0))
+    return max(1.0, max_model_depth / (SWEEP_FINE_RECEIVER_DEPTHS - 1))
+
 
 @dataclass
 class EnvInfo:
@@ -80,12 +101,25 @@ def _number_of_beams(dist_km, freq):
     return min(automatic, MAX_BEAMS)
 
 
-def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
+def write_env(
+    ssp_file,
+    freq,
+    source_depth,
+    dist_km,
+    deepest_bathy,
+    path=None,
+    max_ranges=MAX_NUMBER_OF_RANGES,
+    depth_step=RECEIVER_DEPTH_STEP_M,
+):
     """
     Write the Bellhop environment file.
 
+    source_depth  -- one source depth, or a sequence of them (metres); Bellhop
+                     solves every source depth in a single run
     dist_km       -- maximum receiver range in kilometres
     deepest_bathy -- deepest water depth along the slice, metres
+    max_ranges    -- cap on the number of receiver ranges
+    depth_step    -- target receiver depth spacing, metres
     """
     path = path or config.ENV_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,10 +132,10 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
         ssp_depth, ssp_speed, max_model_depth
     )
 
-    # One receiver range per metre, up to MAX_NUMBER_OF_RANGES.
-    number_of_ranges = min(int(round(dist_km * 1000)) + 1, MAX_NUMBER_OF_RANGES)
-    # Receivers evenly spaced from 0 m to the model depth, about RECEIVER_DEPTH_STEP_M apart.
-    number_receiver_depths = int(np.ceil(max_model_depth / RECEIVER_DEPTH_STEP_M)) + 1
+    # One receiver range per metre, up to max_ranges.
+    number_of_ranges = min(int(round(dist_km * 1000)) + 1, max_ranges)
+    # Receivers evenly spaced from 0 m to the model depth, about depth_step apart.
+    number_receiver_depths = int(np.ceil(max_model_depth / depth_step)) + 1
     receiver_depth_step = max_model_depth / (number_receiver_depths - 1)
     number_of_beams = _number_of_beams(dist_km, freq)
     rbox = dist_km + 1.0  # computational box slightly beyond the last receiver
@@ -116,8 +150,9 @@ def write_env(ssp_file, freq, source_depth, dist_km, deepest_bathy, path=None):
             envfile.write(f" {depth} {speed} /\n")
         envfile.write("'A*' 0.0\n")
         envfile.write(f" {max_model_depth} 1600.00 1.5 0.5 /\n")
-        envfile.write("1                ! NSD\n")
-        envfile.write(f"{source_depth} /             ! SD(1:NSD) (m)\n")
+        source_depths = np.atleast_1d(source_depth)
+        envfile.write(f"{len(source_depths)}                ! NSD\n")
+        envfile.write(f"{' '.join(f'{d:g}' for d in source_depths)} /             ! SD(1:NSD) (m)\n")
         envfile.write(f"{number_receiver_depths}              ! NRD\n")
         envfile.write(f"0.0 {max_model_depth} /          ! RD(1:NRD) (m)\n")
         envfile.write(f"{number_of_ranges}             ! NR\n")

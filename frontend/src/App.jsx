@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getHealth, getMap, postRun } from './api'
+import { getHealth, getMap, getWaterDepth, postRun } from './api'
+import DepthSweep from './DepthSweep'
 import TableAccordion from './TableAccordion'
 
 const DEFAULTS = {
@@ -17,12 +18,16 @@ const DEFAULTS = {
   ssp_date: '20250211',
   depth_data: [],
   temperature_data: [],
+  sweep_min_depth: 100,
+  sweep_max_depth: 450,
+  sweep_count: 10,
 }
 
 const MODES = [
   { value: 'standard', label: 'Standard' },
   { value: 'ranges', label: 'Tactical (range)' },
   { value: 'depths', label: 'Tactical (depth)' },
+  { value: 'sweep', label: 'Depth sweep' },
 ]
 
 const NUMERIC_FIELDS = [
@@ -32,6 +37,12 @@ const NUMERIC_FIELDS = [
   ['source_level', 'Source level (dB)'],
   ['ambient_level', 'Ambient level (dB)'],
   ['range_m', 'Range (m)'],
+]
+
+const SWEEP_FIELDS = [
+  ['sweep_min_depth', 'Shallowest source depth (m)'],
+  ['sweep_max_depth', 'Deepest source depth (m)'],
+  ['sweep_count', 'Number of depths (2-50)'],
 ]
 
 /** Debounce a value so the map preview doesn't refetch on every keystroke. */
@@ -66,6 +77,10 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [running, setRunning] = useState(false)
+  // Water depth at the source: { status: 'idle' | 'loading' | 'ready' | 'outside' | 'error', value }
+  const [waterDepth, setWaterDepth] = useState({ status: 'idle', value: null })
+
+  const sourcePoint = useDebounced(JSON.stringify({ lat: form.lat, lon: form.lon }))
 
   const preview = useDebounced(
     JSON.stringify({
@@ -120,6 +135,34 @@ export default function App() {
     }
   }, [preview, backendError])
 
+  // Look up the water depth at the source whenever its position settles.
+  useEffect(() => {
+    const { lat, lon } = JSON.parse(sourcePoint)
+    if (backendError || lat === '' || lon === '') {
+      setWaterDepth({ status: 'idle', value: null })
+      return undefined
+    }
+
+    let cancelled = false
+    setWaterDepth({ status: 'loading', value: null })
+    getWaterDepth(new URLSearchParams({ lat, lon }))
+      .then(({ water_depth_m: value }) => {
+        if (cancelled) return
+        setWaterDepth(value == null ? { status: 'outside', value: null } : { status: 'ready', value })
+      })
+      .catch(() => !cancelled && setWaterDepth({ status: 'error', value: null }))
+
+    return () => {
+      cancelled = true
+    }
+  }, [sourcePoint, backendError])
+
+  useEffect(() => {
+    if (waterDepth.status === 'ready' && Number(form.sweep_max_depth) >= waterDepth.value) {
+      setForm((prev) => ({ ...prev, sweep_max_depth: waterDepth.value - 1 }))
+    }
+  }, [waterDepth])
+
   function update(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
@@ -155,7 +198,8 @@ export default function App() {
     setResult(null)
 
     const payload = { ...form }
-    for (const key of ['lat', 'lon', 'bearing', ...NUMERIC_FIELDS.map((f) => f[0])]) {
+    const numericKeys = [...NUMERIC_FIELDS, ...SWEEP_FIELDS].map((f) => f[0])
+    for (const key of ['lat', 'lon', 'bearing', ...numericKeys]) {
       payload[key] = Number(payload[key])
     }
 
@@ -285,6 +329,35 @@ export default function App() {
           ))}
         </fieldset>
 
+        {form.mode === 'sweep' && (
+          <>
+            <p className="hint">
+              {{
+                idle: 'Place the source to see the water depth there.',
+                loading: 'Looking up water depth at the source…',
+                ready: `Water depth at the source: ${waterDepth.value} m`,
+                outside: 'The source is outside the bathymetry grid.',
+                error: 'Could not look up the water depth at the source.',
+              }[waterDepth.status]}
+            </p>
+            {waterDepth.status === 'ready' && Number(form.sweep_max_depth) >= waterDepth.value && (
+              <p className="warning">
+                The deepest source depth must be shallower than {waterDepth.value} m.
+              </p>
+            )}
+            {SWEEP_FIELDS.map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input value={form[key]} onChange={(e) => update(key, e.target.value)} />
+              </label>
+            ))}
+            <p className="hint">
+              Bellhop solves every depth in one run, so run time grows with the number of depths.
+              The source depth field above is not used.
+            </p>
+          </>
+        )}
+
         <button type="submit" disabled={running || !!backendError}>
           {running ? 'Running Bellhop…' : 'Run scenario'}
         </button>
@@ -312,6 +385,12 @@ export default function App() {
           </figure>
         )}
 
+        {result?.warnings?.map((warning, i) => (
+          <p key={i} className="warning">
+            {warning}
+          </p>
+        ))}
+
         {result?.notes?.length > 0 && (
           <div className="notes">
             {result.notes.map((note, i) => (
@@ -319,6 +398,8 @@ export default function App() {
             ))}
           </div>
         )}
+
+        {result?.sweep_frames?.length > 0 && <DepthSweep frames={result.sweep_frames} />}
 
         {result?.plots?.map((figure) => (
           <figure key={figure.title}>

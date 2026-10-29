@@ -51,10 +51,14 @@ export async function request(path, options = {}) {
   }
 
   if (!response.ok) {
+    // FastAPI validation errors (422) are a list of { loc, msg }; show them as
+    // "field: message" lines rather than raw JSON.
     const detail =
       typeof body.detail === 'string'
         ? body.detail
-        : JSON.stringify(body.detail ?? body, null, 2)
+        : Array.isArray(body.detail) && body.detail.every((e) => e?.msg)
+          ? body.detail.map((e) => `${(e.loc ?? []).filter((p) => p !== 'body').join('.')}: ${e.msg}`).join('\n')
+          : JSON.stringify(body.detail ?? body, null, 2)
     throw new ApiError(detail, { status: response.status, traceback: body.traceback })
   }
 
@@ -64,6 +68,7 @@ export async function request(path, options = {}) {
 export const getHealth = () => request('/api/health')
 export const getArrays = () => request('/api/arrays')
 export const getMap = (params) => request(`/api/map?${params.toString()}`)
+export const getWaterDepth = (params) => request(`/api/water-depth?${params.toString()}`)
 
 export const postRun = (payload) =>
   request('/api/run', {

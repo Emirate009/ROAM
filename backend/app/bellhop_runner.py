@@ -24,6 +24,54 @@ def _readshd(*args, **kwargs):
     return readshd(*args, **kwargs)
 
 
+# Spreading sets a floor on TL: spherical, 20 log10(r), out to about one water
+# depth H, then cylindrical, 20 log10(H) + 10 log10(r/H), once the sound is
+# trapped between surface and seabed. Focusing (e.g. a convergence zone) can
+# beat that floor by several dB, but not by 20 dB across a sizeable part of the
+# field. When it does, Bellhop has mis-traced beams: an 80 km run over a kinked
+# seabed had 41% of its receivers past this bound, while clean runs stay well
+# under 1%.
+IMPLAUSIBLE_MARGIN_DB = 20.0
+IMPLAUSIBLE_MIN_RANGE_M = 1000.0   # the near field is not spreading limited
+IMPLAUSIBLE_MAX_FRACTION = 0.01
+
+
+def implausible_tl_fraction(tl, dist_km, bathy_range, bathy_depth):
+    """Fraction of receivers beyond 1 km whose TL is implausibly low.
+
+    tl is (depth, range) or (source depth, depth, range); for a stack the
+    result has one value per source depth. The water depth used for the
+    cylindrical part is the shallowest seen so far along the slice, which
+    gives the most lenient (lowest) floor.
+    """
+    tl = np.asarray(tl)
+    ranges = np.linspace(0.0, dist_km * 1000.0, tl.shape[-1])
+    far = ranges >= IMPLAUSIBLE_MIN_RANGE_M
+    r = ranges[far]
+    water_depth = np.minimum.accumulate(np.interp(ranges, bathy_range, bathy_depth))[far]
+    h = np.maximum(water_depth, 1.0)
+    floor = 20.0 * np.log10(np.minimum(r, h)) + 10.0 * np.log10(np.maximum(r, h) / h)
+
+    field = tl[..., far]
+    finite = np.isfinite(field)
+    implausible = (field < floor - IMPLAUSIBLE_MARGIN_DB) & finite
+    with np.errstate(invalid="ignore", divide="ignore"):
+        fraction = implausible.sum(axis=(-2, -1)) / finite.sum(axis=(-2, -1))
+    return np.nan_to_num(fraction)
+
+
+def implausible_tl_warning(fraction, where):
+    """A warning for the results page, or None if the field looks physical."""
+    if fraction <= IMPLAUSIBLE_MAX_FRACTION:
+        return None
+    return (
+        f"{where}: {fraction:.0%} of the field beyond 1 km has transmission loss more than "
+        f"{IMPLAUSIBLE_MARGIN_DB:g} dB below what spreading alone allows, which is not "
+        "physically possible. Bellhop has probably mis-traced some beams (a sharp seabed feature is the "
+        "usual cause), so treat this plot as unreliable."
+    )
+
+
 def tl_diagnostics(tl):
     """Summary stats that used to be printed to the terminal."""
     finite = np.asarray(tl)[np.isfinite(tl)]
@@ -69,6 +117,9 @@ def _run_with_progress(command, progress):
 def run_bellhop(progress=None, label=""):
     """Execute Bellhop on the current WG_.env / WG_.bty and return the TL array.
 
+    The array is (depth, range) for a single source depth, or
+    (source depth, depth, range) when the .env lists several.
+
     This never calls os.chdir on the process; the working
     directory is passed to the subprocess instead, which is safe under a server
     handling concurrent requests.
@@ -108,7 +159,9 @@ def run_bellhop(progress=None, label=""):
             progress.step(f"{label}Reading TL")
         pressure, _geometry = _readshd(str(config.SHD_FILE), np.nan, np.nan, np.nan)
 
-    p = np.squeeze(pressure, axis=(0, 1))
+    p = pressure[0]  # single bearing
+    if p.shape[0] == 1:
+        p = p[0]
     p = np.where(p == 0, np.nan, p)
     with np.errstate(divide="ignore", invalid="ignore"):
         tl = -20 * np.log10(np.abs(p))
