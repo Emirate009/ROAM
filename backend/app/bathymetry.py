@@ -13,13 +13,8 @@ from .errors import InputError
 from .geometry import calculate_terminus_points
 
 BATHY_STEP_M = 100.0  # spacing of bathymetry samples along the slice (grid is ~150-250 m)
-# Sampling the triangulated grid every 100 m leaves sharp kinks wherever the
-# slice crosses a triangle edge (e.g. +11 deg to -13 deg within 200 m). Bellhop's
-# Gaussian beams blow up on such kinks: on one 80 km slice, rays reflected back
-# off the slope returned 27x stronger than the direct path, painting bands of
-# TL < 40 dB at 50 km. Smoothing at the grid's own scale removes the kinks
-# without losing features the grid actually resolves.
-BATHY_SMOOTH_SIGMA_M = 300.0
+# How much the slice is smoothed depends on the Bellhop engine; see
+# config.ENGINES for the values and why.
 
 
 @lru_cache(maxsize=1)
@@ -77,12 +72,14 @@ def load_grid_frame():
     )
 
 
-def bathymetry_slice(x, y, bearing, raylength, step=BATHY_STEP_M):
+def bathymetry_slice(x, y, bearing, raylength, smooth_sigma_m=0.0, step=BATHY_STEP_M):
     """Interpolate depth along the scenario slice, every `step` metres from the source.
 
     Samples sit at the same ranges whatever the slice length, so a 40 km run
     sees the same seabed over its first 10 km as a 10 km run does. A fixed
     sample count did not: 30 samples over 40 km missed features near the source.
+
+    smooth_sigma_m is the Gaussian smoothing applied along the slice (0 = none).
 
     Returns (bathy_range_m, bathy_depth_m).
     Raises InputError if the slice leaves the gridded area.
@@ -102,7 +99,8 @@ def bathymetry_slice(x, y, bearing, raylength, step=BATHY_STEP_M):
             "Move the source inside the gridded area or shorten the range."
         )
 
-    bathy_depth = gaussian_filter1d(bathy_depth, BATHY_SMOOTH_SIGMA_M / step, mode="nearest")
+    if smooth_sigma_m > 0:
+        bathy_depth = gaussian_filter1d(bathy_depth, smooth_sigma_m / step, mode="nearest")
     return bathy_range, bathy_depth
 
 
@@ -111,16 +109,16 @@ def write_bty(bathy_range, bathy_depth, path=None):
     path = path or config.BTY_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as btyfile:
-        btyfile.write("'L'\n")
+        btyfile.write("'C'\n")
         btyfile.write(f"{len(bathy_depth)}\n")
         for r, d in zip(bathy_range, bathy_depth):
             btyfile.write(f"{r / 1000.0} {d}\n")
     return path
 
 
-def prepare_bathymetry(x, y, bearing, raylength, source_depth):
+def prepare_bathymetry(x, y, bearing, raylength, source_depth, smooth_sigma_m=0.0):
     """Main function to extract the bathymetry slice and write the .bty file."""
-    bathy_range, bathy_depth = bathymetry_slice(x, y, bearing, raylength)
+    bathy_range, bathy_depth = bathymetry_slice(x, y, bearing, raylength, smooth_sigma_m)
 
     if source_depth > float(np.max(bathy_depth)):
         raise InputError(

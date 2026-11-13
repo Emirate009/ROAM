@@ -14,6 +14,7 @@ const DEFAULTS = {
   ambient_level: 70,
   range_m: 5000,
   mode: 'standard',
+  engine: 'bellhop',
   use_current_ssp: false,
   ssp_date: '20250211',
   depth_data: [],
@@ -356,6 +357,27 @@ export default function App() {
               The source depth field above is not used.
             </p>
           </>
+        )}
+
+        {/* Off runs Porter's original Bellhop; on runs bellhopcxx, its C++ port. The
+            backend also smooths the seabed to suit each (ENGINES in backend/app/config.py). */}
+        <label className="checkbox" title="bellhopcxx, a C++ port of Bellhop">
+          <input
+            type="checkbox"
+            checked={form.engine === 'fast'}
+            disabled={running}
+            onChange={(e) => update('engine', e.target.checked ? 'fast' : 'bellhop')}
+          />
+          Run ROAM Lite (bellhopcxx)
+        </label>
+        {form.engine === 'fast' && (
+          <p className="hint">About 3× quicker; blurs small seabed features (600 m smoothing). Not recommended for areas with significant bathymetric variation.</p>
+        )}
+        {form.engine === 'bellhop' && health?.porter_bellhop_exe_exists === false && (
+          <p className="warning">
+            Bellhop not found at {health.porter_bellhop_exe}. Turn on Fast mode, or set WG_PORTER_BELLHOP_EXE to its
+            path.
+          </p>
         )}
 
         <button type="submit" disabled={running || !!backendError}>

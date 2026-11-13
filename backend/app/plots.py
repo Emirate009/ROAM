@@ -39,7 +39,7 @@ def _encode(fig, title, tight=True):
     return {"title": title, "image": f"data:image/png;base64,{encoded}"}
 
 
-def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, dist_km, tight=True):
+def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, receiver_depth, dist_km, tight=True):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     deepest_model_depth = int(np.ceil(max(bathy_depth) + 1))
@@ -55,12 +55,14 @@ def transmission_loss_figure(title, tl, bathy_range, bathy_depth, source_depth, 
     )
     ax.fill_between(bathy_range, bathy_depth, deepest_model_depth, color="0.4")
     fig.colorbar(image, ax=ax, label="Transmission loss (dB)")
-    ax.plot(0, source_depth, marker="<", markersize=16, color="k")
+    ax.axhline(y=receiver_depth, color="black", linestyle="--", linewidth=0.5, label="Receiver")
+    ax.plot(0, source_depth, marker=">", markersize=10, color="k", clip_on=False, label="Source")
     ax.set_xlim(0, range_m)
     ax.set_ylim(deepest_model_depth, 0)
     ax.set_xlabel("Range (m)")
     ax.set_ylabel("Depth (m)")
     ax.set_title(title)
+    ax.legend(loc="lower right")
 
     if not tight:
         fig.tight_layout()

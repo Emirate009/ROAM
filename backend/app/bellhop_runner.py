@@ -114,8 +114,10 @@ def _run_with_progress(command, progress):
                 progress.refresh()
 
 
-def run_bellhop(progress=None, label=""):
+def run_bellhop(progress=None, label="", engine=None):
     """Execute Bellhop on the current WG_.env / WG_.bty and return the TL array.
+
+    engine is a config.Engine (default: config.ENGINES[config.DEFAULT_ENGINE]).
 
     The array is (depth, range) for a single source depth, or
     (source depth, depth, range) when the .env lists several.
@@ -128,10 +130,11 @@ def run_bellhop(progress=None, label=""):
         if config.SHD_FILE.exists():
             config.SHD_FILE.unlink()
 
-        command = [str(config.BELLHOP_EXE), config.ENV_STEM]
+        engine = engine or config.ENGINES[config.DEFAULT_ENGINE]
+        command = [str(engine.exe), config.ENV_STEM]
 
-        # For running on MAC
-        if config.USE_WINE:
+        # A Windows build on a Mac runs under wine
+        if engine.use_wine:
             command.insert(0, "wine")
 
         try:

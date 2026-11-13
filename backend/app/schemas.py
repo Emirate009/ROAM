@@ -20,6 +20,8 @@ class ScenarioParams(BaseModel):
     range_m: int = Field(5000, gt=0, description="Ray length in metres")
 
     mode: Literal["standard", "ranges", "depths", "sweep"] = "standard"
+    # "bellhop" = Porter's original Fortran BELLHOP; "fast" = bellhopcxx, its C++ port.
+    engine: Literal["bellhop", "fast"] = "bellhop"
 
     # Depth sweep: Bellhop runs once with every source depth in this range.
     # A source at exactly 0 m is cancelled by the pressure-release surface, so

@@ -4,7 +4,7 @@ The four scenario modes, as pure functions that return plots + diagnostics.
 
 import numpy as np
 
-from . import plots, sites
+from . import config, plots, sites
 from .bathymetry import prepare_bathymetry
 from .bellhop_runner import (
     IMPLAUSIBLE_MAX_FRACTION,
@@ -25,11 +25,24 @@ STEPS_PER_RUN = 5
 SWEEP_SETUP_STEPS = 4
 
 
-def _single_run(ssp_file, x, y, bearing, raylength, source_depth, freq, progress, label="", title="Bellhop - WG"):
+def _engine(params):
+    return config.ENGINES[params.engine]
+
+
+def _engine_note(params):
+    engine = _engine(params)
+    sigma = engine.bathy_smooth_sigma_m
+    seabed = f"seabed smoothed over {sigma:g} m" if sigma > 0 else "seabed unsmoothed"
+    return f"Model: {engine.label}; {seabed}."
+
+
+def _single_run(ssp_file, x, y, bearing, raylength, source_depth, freq, progress, engine, label="", title="Bellhop - WG"):
     """Bathymetry -> env -> Bellhop for one source position and depth."""
     dist_km = raylength / 1000.0
     progress.step(f"{label}Bathymetry")
-    bathy_range, bathy_depth = prepare_bathymetry(x, y, bearing, raylength, source_depth)
+    bathy_range, bathy_depth = prepare_bathymetry(
+        x, y, bearing, raylength, source_depth, engine.bathy_smooth_sigma_m
+    )
     progress.step(f"{label}Environment")
     env_info = write_env(
         ssp_file=ssp_file,
@@ -39,7 +52,7 @@ def _single_run(ssp_file, x, y, bearing, raylength, source_depth, freq, progress
         deepest_bathy=float(np.max(bathy_depth)),
     )
     progress.step(f"{label}Bellhop")
-    tl, process = run_bellhop(progress, label)
+    tl, process = run_bellhop(progress, label, engine)
     return {
         "tl": tl,
         "bathy_range": bathy_range,
@@ -72,6 +85,7 @@ def run_standard(params, ssp_file, progress):
         params.source_depth,
         params.frequency,
         progress,
+        _engine(params),
     )
     tl = run["tl"]
     env = run["env"]
@@ -92,6 +106,7 @@ def run_standard(params, ssp_file, progress):
             run["bathy_range"],
             run["bathy_depth"],
             params.source_depth,
+            params.receiver_depth,
             run["dist_km"],
         ),
         plots.tl_slice_figure(
@@ -109,7 +124,7 @@ def run_standard(params, ssp_file, progress):
     return {
         "plots": figures,
         "diagnostics": run["diagnostics"],
-        "notes": env.notes,
+        "notes": [_engine_note(params), *env.notes],
         "warnings": [run["warning"]] if run["warning"] else [],
         "receiver_spacing_m": round(env.receiver_depth_step, 3),
     }
@@ -120,7 +135,7 @@ def run_ranges(params, ssp_file, progress):
     bearing = compass_to_math_bearing(params.bearing)
     figures = []
     diagnostics = []
-    notes = []
+    notes = [_engine_note(params)]
     warnings = []
 
     x, y = _source_metres(params)
@@ -140,6 +155,7 @@ def run_ranges(params, ssp_file, progress):
             params.source_depth,
             params.frequency,
             progress,
+            _engine(params),
             run_label,
             title=f"Bellhop - WG{label}",
         )
@@ -151,6 +167,7 @@ def run_ranges(params, ssp_file, progress):
                 run["bathy_range"],
                 run["bathy_depth"],
                 params.source_depth,
+                params.receiver_depth,
                 run["dist_km"],
             )
         )
@@ -167,7 +184,7 @@ def run_depths(params, ssp_file, progress):
     bearing = compass_to_math_bearing(params.bearing)
     figures = []
     diagnostics = []
-    notes = []
+    notes = [_engine_note(params)]
     warnings = []
 
     x, y = _source_metres(params)
@@ -184,6 +201,7 @@ def run_depths(params, ssp_file, progress):
             source_depth,
             params.frequency,
             progress,
+            _engine(params),
             run_label,
             title=f"Bellhop - WG @ {source_depth}m",
         )
@@ -195,6 +213,7 @@ def run_depths(params, ssp_file, progress):
                 run["bathy_range"],
                 run["bathy_depth"],
                 source_depth,
+                params.receiver_depth,
                 run["dist_km"],
             )
         )
@@ -224,7 +243,7 @@ def run_sweep(params, ssp_file, progress):
 
     progress.step("Bathymetry")
     bathy_range, bathy_depth = prepare_bathymetry(
-        x, y, bearing, params.range_m, float(depths[-1])
+        x, y, bearing, params.range_m, float(depths[-1]), _engine(params).bathy_smooth_sigma_m
     )
     # The source sits at range 0, so it must be above the seabed there, not
     # just above the deepest point along the slice.
@@ -247,7 +266,7 @@ def run_sweep(params, ssp_file, progress):
         depth_step=sweep_receiver_depth_step(dist_km, deepest_bathy),
     )
     progress.step("Bellhop")
-    tl_stack, _process = run_bellhop(progress)
+    tl_stack, _process = run_bellhop(progress, engine=_engine(params))
 
     empty = [f"{depth:g}" for depth, tl in zip(depths, tl_stack) if not np.isfinite(tl).any()]
     if empty:
@@ -292,6 +311,7 @@ def run_sweep(params, ssp_file, progress):
                 bathy_range,
                 bathy_depth,
                 depth,
+                params.receiver_depth,
                 dist_km,
                 tight=False,
             ),
@@ -312,7 +332,7 @@ def run_sweep(params, ssp_file, progress):
         "plots": [],
         "sweep_frames": frames,
         "diagnostics": tl_diagnostics(tl_stack),
-        "notes": env_info.notes,
+        "notes": [_engine_note(params), *env_info.notes],
         "warnings": [sweep_warning] if sweep_warning else [],
         "receiver_spacing_m": round(env_info.receiver_depth_step, 3),
     }

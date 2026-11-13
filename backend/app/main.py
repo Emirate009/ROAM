@@ -64,6 +64,8 @@ def log_paths():
     logger.info("bellhop exe    : %s (exists=%s)", config.BELLHOP_EXE, config.BELLHOP_EXE.exists())
     logger.info("ssp directory  : %s (exists=%s)", config.SSP_DIR, config.SSP_DIR.is_dir())
     logger.info("use wine       : %s", config.USE_WINE)
+    porter = config.ENGINES["bellhop"]
+    logger.info("porter bellhop : %s (exists=%s, wine=%s)", porter.exe, porter.exe.exists(), porter.use_wine)
     if not config.GRID_FILE.exists():
         logger.warning("Grid file not found - the map and every run will fail. "
                        "Set WG_DATA_ROOT to the folder containing bellhop/ and ssp/.")
@@ -84,6 +86,8 @@ def health():
         "ssp_dir": str(config.SSP_DIR),
         "ssp_dir_exists": config.SSP_DIR.is_dir(),
         "use_wine": config.USE_WINE,
+        "porter_bellhop_exe": str(config.PORTER_BELLHOP_EXE),
+        "porter_bellhop_exe_exists": config.PORTER_BELLHOP_EXE.exists(),
     }
 
 
@@ -163,10 +167,11 @@ async def run_scenario(params: ScenarioParams):
             status_code=503,
             detail=f"Bathymetry grid not found at {config.GRID_FILE}.",
         )
-    if not config.BELLHOP_EXE.exists():
+    engine = config.ENGINES[params.engine]
+    if not engine.exe.exists():
         raise HTTPException(
             status_code=503,
-            detail=f"Bellhop executable not found at {config.BELLHOP_EXE}.",
+            detail=f"{engine.label} executable not found at {engine.exe}.",
         )
 
     if params.depth_data and params.temperature_data:

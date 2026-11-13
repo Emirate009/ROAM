@@ -1,11 +1,18 @@
 /**
- * Record a depth sweep as a video, entirely in the browser: each frame's PNGs
- * are drawn onto a canvas and MediaRecorder captures the canvas in real time,
- * so the video plays at exactly the rate the frames were drawn.
+ * Export a depth sweep as a video, entirely in the browser: each frame's PNGs
+ * are drawn onto a canvas, then turned into video.
+ *
+ * MP4 (H.264) is made with WebCodecs via Mediabunny: every depth is encoded
+ * with an exact timestamp and duration, so the video doesn't depend on timers,
+ * runs faster than real time and keeps working if the tab is hidden. Browsers
+ * without an H.264 encoder fall back to MediaRecorder, which records the
+ * canvas in real time and may only manage WebM, and WebM doesn't open in
+ * QuickTime or PowerPoint.
  */
+import { BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH, canEncodeVideo } from 'mediabunny'
 
-// Preferred first; MP4 opens in PowerPoint / QuickTime, WebM is the fallback.
-const MIME_TYPES = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+// MediaRecorder fallback, preferred first.
+const RECORDER_TYPES = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
 const CAPTION_HEIGHT = 56
 const CANVAS_FPS = 30
 
@@ -15,9 +22,14 @@ export const VIDEO_CONTENTS = [
   { value: 'slice', label: 'Slice only' },
 ]
 
-export function supportedVideoType() {
+function recorderType() {
   if (typeof MediaRecorder === 'undefined') return null
-  return MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? null
+  return RECORDER_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? null
+}
+
+/** Whether this browser can make a video at all (the H.264 check needs the frame size, so happens later). */
+export function canExportVideo() {
+  return typeof VideoEncoder !== 'undefined' || recorderType() !== null
 }
 
 async function loadImage(src) {
@@ -30,14 +42,66 @@ async function loadImage(src) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const even = (n) => Math.ceil(n / 2) * 2 // H.264 needs even dimensions
 
+/** One sample per depth, each lasting exactly frameMs. */
+async function encodeMp4(canvas, images, draw, frameMs, onProgress) {
+  const output = new Output({
+    format: new Mp4OutputFormat({ fastStart: 'in-memory' }), // moov first, so players open it straight away
+    target: new BufferTarget(),
+  })
+  const seconds = frameMs / 1000
+  // A key frame per depth, so scrubbing lands on any depth instantly.
+  const source = new CanvasSource(canvas, { codec: 'avc', quality: QUALITY_HIGH, keyFrameInterval: 0 })
+  output.addVideoTrack(source, { frameRate: 1 / seconds })
+  await output.start()
+  for (let i = 0; i < images.length; i++) {
+    draw(images[i])
+    await source.add(i * seconds, seconds)
+    onProgress?.(i + 1, images.length)
+  }
+  await output.finalize()
+  return { blob: new Blob([output.target.buffer], { type: 'video/mp4' }), extension: 'mp4' }
+}
+
+async function recordInRealTime(canvas, images, draw, frameMs, onProgress, mimeType) {
+  draw(images[0]) // so the first captured frame isn't blank
+  const stream = canvas.captureStream(CANVAS_FPS)
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 })
+  const chunks = []
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
+  const stopped = new Promise((resolve) => (recorder.onstop = resolve))
+
+  // The stream only emits a video frame when the canvas is redrawn, and each
+  // frame lasts until the next one, so redraw at the capture rate to hold
+  // every depth, the last included, for its full frameMs.
+  async function hold(image, ms) {
+    const end = performance.now() + ms
+    for (let left = ms; left > 0; left = end - performance.now()) {
+      draw(image)
+      await sleep(Math.min(1000 / CANVAS_FPS, left))
+    }
+  }
+
+  recorder.start()
+  for (let i = 0; i < images.length; i++) {
+    onProgress?.(i + 1, images.length)
+    await hold(images[i], frameMs)
+  }
+  draw(images[images.length - 1]) // closes the last hold so its duration is recorded
+  recorder.stop()
+  await stopped
+  stream.getTracks().forEach((t) => t.stop())
+
+  return {
+    blob: new Blob(chunks, { type: mimeType.split(';')[0] }),
+    extension: mimeType.startsWith('video/mp4') ? 'mp4' : 'webm',
+  }
+}
+
 /**
  * frames: the sweep frames, in play order. frameMs: how long each one shows.
  * contents: one of VIDEO_CONTENTS. Resolves to { blob, extension }.
  */
 export async function recordSweepVideo(frames, { frameMs, contents, onProgress }) {
-  const mimeType = supportedVideoType()
-  if (!mimeType) throw new Error('This browser cannot record video (no MediaRecorder support).')
-
   const images = await Promise.all(
     frames.map(async (f) => ({
       depth: f.depth,
@@ -70,27 +134,12 @@ export async function recordSweepVideo(frames, { frameMs, contents, onProgress }
     }
   }
 
-  draw(images[0]) // so the first captured frame isn't blank
-  const stream = canvas.captureStream(CANVAS_FPS)
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 })
-  const chunks = []
-  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
-  const stopped = new Promise((resolve) => (recorder.onstop = resolve))
-
-  recorder.start()
-  for (let i = 0; i < images.length; i++) {
-    draw(images[i])
-    onProgress?.(i + 1, images.length)
-    await sleep(frameMs)
+  if (await canEncodeVideo('avc', { width: canvas.width, height: canvas.height, quality: QUALITY_HIGH })) {
+    return encodeMp4(canvas, images, draw, frameMs, onProgress)
   }
-  recorder.stop()
-  await stopped
-  stream.getTracks().forEach((t) => t.stop())
-
-  return {
-    blob: new Blob(chunks, { type: mimeType.split(';')[0] }),
-    extension: mimeType.startsWith('video/mp4') ? 'mp4' : 'webm',
-  }
+  const mimeType = recorderType()
+  if (!mimeType) throw new Error('This browser cannot make video (no H.264 encoder or MediaRecorder).')
+  return recordInRealTime(canvas, images, draw, frameMs, onProgress, mimeType)
 }
 
 export function downloadBlob(blob, filename) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { VIDEO_CONTENTS, downloadBlob, recordSweepVideo, supportedVideoType } from './sweepVideo'
+import { VIDEO_CONTENTS, canExportVideo, downloadBlob, recordSweepVideo } from './sweepVideo'
 
 const PLAY_INTERVAL_MS = 600
 // The speed button cycles through these multipliers of the base rate.
@@ -22,7 +22,7 @@ export default function DepthSweep({ frames }) {
   const [videoContents, setVideoContents] = useState(VIDEO_CONTENTS[0].value)
   const [recording, setRecording] = useState(false)
   const [videoStatus, setVideoStatus] = useState('')
-  const canRecord = supportedVideoType() !== null
+  const canRecord = canExportVideo()
   const last = frames.length - 1
 
   // Decode every image up front so the first visit to a depth doesn't flash.
@@ -95,12 +95,16 @@ export default function DepthSweep({ frames }) {
       const { blob, extension } = await recordSweepVideo(frames, {
         frameMs: PLAY_INTERVAL_MS / speed,
         contents: videoContents,
-        onProgress: (i, n) => setVideoStatus(`Recording frame ${i} / ${n}…`),
+        onProgress: (i, n) => setVideoStatus(`Encoding frame ${i} / ${n}…`),
       })
       const first = frames[0].depth
       const lastDepth = frames[last].depth
       downloadBlob(blob, `depth-sweep_${first}-${lastDepth}m_${videoContents}_${speed}x.${extension}`)
-      setVideoStatus('')
+      setVideoStatus(
+        extension === 'webm'
+          ? "My browser can't make MP4, so the video was saved as WebM, which plays in Chrome or VLC but not QuickTime or PowerPoint. Export from Chrome or Safari for an MP4."
+          : '',
+      )
     } catch (err) {
       setVideoStatus(`Video export failed: ${err.message}`)
     } finally {
