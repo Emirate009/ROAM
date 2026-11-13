@@ -8,7 +8,11 @@ Dummy parameter NMedia = 1
     Attenuation units: dB/wavelength
     VACUUM
 
+<<<<<<< Updated upstream
   Depth =   2.26e+03  m
+=======
+  Depth =   2.52e+03  m
+>>>>>>> Stashed changes
 
 Sound speed profile:
       z         alphaR      betaR     rho        alphaI     betaI
@@ -53,36 +57,64 @@ Sound speed profile:
 1.68e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
 1.94e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
 2.23e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+<<<<<<< Updated upstream
 2.26e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+=======
+2.52e+03 1.49e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+>>>>>>> Stashed changes
 
  RMS roughness =  0.000e+00
     Bathymetry file selected
     ACOUSTO-ELASTIC half-space
+<<<<<<< Updated upstream
   2.26e+03   1.60e+03   1.50e+00 5.00e-01 0.0000e+00 0.0000e+00
+=======
+  2.52e+03   1.60e+03   1.50e+00 5.00e-01 0.0000e+00 0.0000e+00
+>>>>>>> Stashed changes
 
 __________________________________________________________________________
 
-   Number of Source   z-coordinates, Sz = 1
+   Number of Source   z-coordinates, Sz = 50
    Source   z-coordinates, Sz (m)
+<<<<<<< Updated upstream
      2.000000e+02 
+=======
+     1.000000e+02   1.493000e+02   1.987000e+02   2.480000e+02   2.974000e+02 
+     3.467000e+02   3.961000e+02   4.454000e+02   4.948000e+02   5.441000e+02 
+   ...   2.518000e+03
+>>>>>>> Stashed changes
 
 
 __________________________________________________________________________
 
+<<<<<<< Updated upstream
    Number of Receiver z-coordinates, Rz = 2257
    Receiver z-coordinates, Rz (m)
      0.000000e+00   1.000000e+00   2.000000e+00   3.000000e+00   4.000000e+00 
      5.000000e+00   6.000000e+00   7.000000e+00   8.000000e+00   9.000000e+00 
    ...   2.256000e+03
+=======
+   Number of Receiver z-coordinates, Rz = 128
+   Receiver z-coordinates, Rz (m)
+     0.000000e+00   1.986614e+01   3.973228e+01   5.959843e+01   7.946457e+01 
+     9.933071e+01   1.191969e+02   1.390630e+02   1.589291e+02   1.787953e+02 
+   ...   2.523000e+03
+>>>>>>> Stashed changes
 
 
 __________________________________________________________________________
 
-   Number of Receiver r-coordinates, Rr = 5001
+   Number of Receiver r-coordinates, Rr = 1001
    Receiver r-coordinates, Rr (km)
+<<<<<<< Updated upstream
      0.000000e+00   1.000000e-03   2.000000e-03   3.000000e-03   4.000000e-03 
      5.000001e-03   6.000000e-03   7.000000e-03   8.000000e-03   9.000001e-03 
    ...   5.000000e+00
+=======
+     0.000000e+00   6.000000e-02   1.200000e-01   1.800000e-01   2.400000e-01 
+     3.000000e-01   3.600000e-01   4.200000e-01   4.800000e-01   5.400000e-01 
+   ...   6.000000e+01
+>>>>>>> Stashed changes
 
 
 Coherent TL calculation
@@ -91,25 +123,43 @@ Point source (cylindrical coordinates)
 Rectilinear receiver grid: Receivers at Rr[:] x Rz[:]
 __________________________________________________________________________
 
+<<<<<<< Updated upstream
    Number of beams in elevation   = 4000
    Beam take-off angles (degrees)
  -8.900000e+01  -8.895549e+01  -8.891098e+01  -8.886647e+01  -8.882196e+01 
  -8.877744e+01  -8.873293e+01  -8.868842e+01  -8.864391e+01  -8.859940e+01 
+=======
+   Number of beams in elevation   = 3000
+   Beam take-off angles (degrees)
+ -8.900000e+01  -8.894065e+01  -8.888129e+01  -8.882194e+01  -8.876259e+01 
+ -8.870323e+01  -8.864388e+01  -8.858453e+01  -8.852518e+01  -8.846582e+01 
+>>>>>>> Stashed changes
 ...   8.900000e+01
 
 __________________________________________________________________________
 
 
+<<<<<<< Updated upstream
  Step length,       deltas =  2.2560e+02 m
 
 Maximum ray depth, Box.y  =  2.3060e+03 m
 Maximum ray range, Box.x  =  6.0000e+00km
+=======
+ Step length,       deltas =  2.5230e+02 m
+
+Maximum ray depth, Box.y  =  2.5730e+03 m
+Maximum ray range, Box.x  =  6.1000e+01km
+>>>>>>> Stashed changes
 
 Geometric Gaussian beams
 No beam shift in effect
 
 
+<<<<<<< Updated upstream
  Step length,       deltas = 2.2560e+02 m (automatically selected)
+=======
+ Step length,       deltas = 2.5230e+02 m (automatically selected)
+>>>>>>> Stashed changes
 Piecewise linear interpolation
 Number of altimetry points = 2
 
@@ -117,11 +167,12 @@ Number of altimetry points = 2
 __________________________________________________________________________
 
 Using bottom-bathymetry file
-Piecewise linear interpolation
-Number of bathymetry points = 32
+Curvilinear Interpolation
+Number of bathymetry points = 603
 Short format (bathymetry only)
 
  Range (km)  Depth (m)
+<<<<<<< Updated upstream
 0.000e+00 2.241e+03
 1.724e-01 2.254e+03
 3.448e-01 2.248e+03
@@ -143,6 +194,29 @@ Short format (bathymetry only)
 3.103e+00 1.964e+03
 3.276e+00 1.917e+03
 5.000e+00 1.917e+03
+=======
+0.000e+00 2.520e+03
+1.000e-01 2.520e+03
+2.000e-01 2.520e+03
+3.000e-01 2.520e+03
+4.000e-01 2.520e+03
+5.000e-01 2.520e+03
+6.000e-01 2.520e+03
+7.000e-01 2.520e+03
+8.000e-01 2.521e+03
+9.000e-01 2.521e+03
+1.000e+00 2.521e+03
+1.100e+00 2.521e+03
+1.200e+00 2.521e+03
+1.300e+00 2.521e+03
+1.400e+00 2.521e+03
+1.500e+00 2.521e+03
+1.600e+00 2.521e+03
+1.700e+00 2.521e+03
+1.800e+00 2.521e+03
+1.900e+00 2.522e+03
+6.000e+01 1.706e+02
+>>>>>>> Stashed changes
 Number of source beam pattern points 2
 
  Angle (degrees)  Power (dB)

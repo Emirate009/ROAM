@@ -28,5 +28,8 @@ bellhop/icon.ico
 start.sh
 frontend/src/*.txt
 
+backscatter_diagnosis.png
+.claude/
+
 # macOS
 .DS_Store
